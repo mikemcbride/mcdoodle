@@ -5,11 +5,10 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
     plugins: [vue()],
     server: {
-        port: 3456,
         open: true,
         proxy: {
             '/api': {
-                target: 'https://doodle.mcbrid.es/api',
+                target: 'http://localhost:3000/api',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, '')
             }

@@ -59,17 +59,8 @@ export default {
     },
     async post(table, req, res) {
         try {
-            const exists = await this.get(table, req, res, { date: req.body.date })
-            if (exists.length) {
-                // if we have an existing row with the same date, let's do an update instead.
-                const hoursToAdd = req.body.hours
-                req.body = exists[0]
-                req.body.hours += hoursToAdd
-                return await this.put(table, req, res)
-            } else {
-                const data = await base(table).create(req.body)
-                return formatRecord(data)
-            }
+            const data = await base(table).create(req.body)
+            return formatRecord(data)
         } catch (err) {
             res.statusCode = err.statusCode || 500
             console.error(`error creating record in table ${table}:`, err)

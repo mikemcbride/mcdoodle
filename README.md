@@ -1,7 +1,5 @@
-# Vue 3 + Vite
+# McDoodle
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+I used to use Doodle all the time for finding days that worked best for groups of people to meet. At some point in the last few months, Doodle released a bunch of updates and the SUPER basic functionality that I had used for years suddenly didn't work the way it used to.
 
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
+So I'm making an app to fix it. This app has the very basic Doodle functionality of being able to pick a bunch of dates and people can select Yes, No, or If Needed on each of the dates. THATS ALL IT DOES.
