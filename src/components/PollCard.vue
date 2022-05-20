@@ -8,7 +8,7 @@
                     </div>
                     <p class="text-sm text-gray-500">{{ poll.description || '' }}</p>
                 </div>
-                <div class="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
+                <div class="flex-shrink-0 mt-0 sm:ml-5">
                     <p class="text-sm text-gray-500">{{ submissions }} {{ submissionText }}</p>
                 </div>
                 <div class="flex-shrink-0 ml-5">
