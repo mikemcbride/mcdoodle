@@ -96,7 +96,7 @@ function doValidation() {
     if (votes.value.length !== props.questions.length) {
         validationErrors.value.push('Must select an answer for every date')
     }
-    return validationErrors.length === 0
+    return validationErrors.value.length === 0
 }
 
 async function handleSubmit() {
@@ -110,15 +110,11 @@ async function handleSubmit() {
 
     submitting.value = true
     let newSubmission = {}
-    console.log('name:', submittedBy.value)
-    console.log('poll:', props.poll)
-    console.log('votes:', votes.value.map(v => ({ question: v.question, response: v.response })))
     // create submission and responses, then inflate and emit them.
     const sub = await Submissions.create({
         person: submittedBy.value,
         poll: [props.poll.id]
     })
-    console.log('submission created:', sub)
     let responses = await Promise.all(votes.value.map(vote => {
         return Responses.create({
             question: [vote.question],
@@ -126,10 +122,6 @@ async function handleSubmit() {
             submission: [sub.id]
         })
     }))
-    console.log('created values:', {
-        sub,
-        responses
-    })
     newSubmission = sub
     newSubmission.responses = responses
     emit('submitted', newSubmission)
