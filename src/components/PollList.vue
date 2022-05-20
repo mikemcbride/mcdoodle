@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-white shadow overflow:hidden sm:rounded-md">
+    <div class="bg-white shadow overflow:hidden rounded-md">
         <ul role="list" class="mt-6 divide-y divide-gray-200">
             <PollCard v-for="(poll, idx) in polls" :key="poll.id" :poll="poll" :poll-index="idx" />
         </ul>
