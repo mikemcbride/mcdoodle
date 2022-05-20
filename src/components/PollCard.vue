@@ -3,10 +3,10 @@
         <router-link :to="`/polls/${poll.id}`" class="block hover:bg-gray-50">
             <div class="px-4 py-4 flex items-center sm:px-6">
                 <div class="flex-1">
-                    <div class="flex text-sm lg:text-base">
+                    <div class="flex text-base lg:text-lg">
                         <p class="font-medium text-blue-600">{{ poll.title }}</p>
                     </div>
-                    <p class="text-sm text-gray-500">{{ poll.description || '' }}</p>
+                    <p class="text-sm lg:text-base text-gray-500">{{ poll.description || '' }}</p>
                 </div>
                 <div class="hidden sm:block flex-shrink-0 mt-0 sm:ml-5">
                     <p class="text-sm text-gray-500">{{ submissions }} {{ submissionText }}</p>
