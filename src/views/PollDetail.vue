@@ -48,6 +48,9 @@
                     </div>
                 </div>
             </div>
+            <div class="mt-20" v-if="submissions.length > 0 && questions.length > 0">
+                <RankedResults :submissions="submissions" :questions="questions" />
+            </div>
         </section>
     </div>
 </template>
@@ -58,6 +61,7 @@ import { useRoute } from 'vue-router'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
 import ResponsePill from '../components/ResponsePill.vue'
 import SubmissionForm from '../components/SubmissionForm.vue'
+import RankedResults from '../components/RankedResults.vue'
 import Polls from '../services/Polls'
 import Questions from '../services/Questions'
 import Submissions from '../services/Submissions'
