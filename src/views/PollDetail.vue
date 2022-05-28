@@ -63,9 +63,6 @@ import ResponsePill from '../components/ResponsePill.vue'
 import SubmissionForm from '../components/SubmissionForm.vue'
 import RankedResults from '../components/RankedResults.vue'
 import Polls from '../services/Polls'
-import Questions from '../services/Questions'
-import Submissions from '../services/Submissions'
-import Responses from '../services/Responses'
 
 const route = useRoute()
 
@@ -76,43 +73,26 @@ const isLoading = ref(true)
 const isAddingSubmission = ref(false)
 
 onBeforeMount(() => {
-    Polls.findById(route.params.id).then(res => {
-        poll.value = res
-        Promise.all([
-            inflateQuestions(res.questions),
-            inflateSubmissions(res.submissions)]
-        ).then(() => {
-            isLoading.value = false
-        })
+    Polls.getInflatedPoll(route.params.id).then(res => {
+        poll.value = res.poll
+        inflateQuestions(res.questions)
+        inflateSubmissions(res)
+        isLoading.value = false
     })
 })
 
 async function inflateQuestions(q) {
-    if (q) {
-        let pollQuestions = await Questions.getMultiple(q)
-        questions.value = pollQuestions.sort((a, b) => a.value - b.value)
-    }
+    questions.value = q.sort((a, b) => a.value - b.value)
 }
 
-async function inflateSubmissions(s) {
-    if (s) {
-        let subs = await Submissions.getMultiple(s)
-        let allResponseIds = subs.flatMap(sub => sub.responses)
-        let allResponses = await inflateResponses(allResponseIds)
+async function inflateSubmissions({ submissions: subs, responses }) {
+    if (subs.length) {
         subs.forEach(sub => {
             sub.responses = sub.responses.map(resId => {
-                return allResponses.find(it => it.id === resId)
+                return responses.find(it => it.id === resId)
             }).filter(res => !!res) // the filter should remove anything that wasn't found/undefined/null
         })
         submissions.value = subs
-    }
-}
-
-async function inflateResponses(r) {
-    if (r) {
-        return await Responses.getMultiple(r)
-    } else {
-        return []
     }
 }
 

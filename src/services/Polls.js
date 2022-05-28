@@ -49,6 +49,11 @@ export default class Polls {
         return null
     }
 
+    static async getInflatedPoll(id) {
+        let { data } = await http.get('/inflated-poll', { params: { id: id }})
+        return data
+    }
+
     static async create(payload) {
         let { data } = await http.post('/polls', payload)
         if (pollCache) {
