@@ -16,7 +16,7 @@
                         >
                             {{ row.date }}
                         </div>
-                        <div class="flex h-6 flex-shrink rounded w-full">
+                        <div class="flex h-3 md:h-6 flex-shrink rounded w-full">
                             <div
                                 v-if="row.yes > 0"
                                 class="group relative bg-emerald-500"
