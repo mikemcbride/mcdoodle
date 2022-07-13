@@ -38,11 +38,12 @@
 import { ref, watch } from 'vue'
 import { RadioGroup, RadioGroupLabel, RadioGroupOption } from '@headlessui/vue'
 import format from 'date-fns/format'
+import addDays from 'date-fns/addDays'
 
 const props = defineProps(['question'])
 const emit = defineEmits(['vote'])
 
-const formattedDate = format(new Date(props.question.value), 'E, MMM do')
+const formattedDate = format(addDays(new Date(props.question.value)), 'E, MMM do')
 const answer = ref(null)
 
 watch(answer, (newValue) => {
