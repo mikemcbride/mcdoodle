@@ -82,7 +82,9 @@ onBeforeMount(() => {
 })
 
 async function inflateQuestions(q) {
-    questions.value = q.sort((a, b) => a.value - b.value)
+    questions.value = q.sort((a, b) => {
+        return new Date(a.value) - new Date(b.value)
+    })
 }
 
 async function inflateSubmissions({ submissions: subs, responses }) {

@@ -9,8 +9,6 @@ export default async (req, res) => {
     }
     try {
         const poll = await airtable.get('polls', req, res)
-
-        const query = { poll: poll.id }
         const [questions, submissions, responses] = await Promise.all([
             airtable.get('questions', {}, res),
             airtable.get('submissions', {}, res),
