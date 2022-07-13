@@ -43,7 +43,7 @@ import addDays from 'date-fns/addDays'
 const props = defineProps(['question'])
 const emit = defineEmits(['vote'])
 
-const formattedDate = format(addDays(new Date(props.question.value)), 'E, MMM do')
+const formattedDate = format(addDays(new Date(props.question.value), 1), 'E, MMM do')
 const answer = ref(null)
 
 watch(answer, (newValue) => {
