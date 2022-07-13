@@ -7,21 +7,21 @@
                     <RadioGroupLabel class="sr-only">Choose an option</RadioGroupLabel>
                     <div class="grid grid-cols-3 gap-3">
                         <RadioGroupOption as="template" value="yes" v-slot="{ active, checked }">
-                            <div :class="[active ? 'ring-2 ring-offset-2 ring-emerald-500' : '', checked ? 'bg-emerald-100 border-transparent text-emerald-700 hover:bg-emerald-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none']">
+                            <div :class="[active ? 'ring-2 ring-offset-2 ring-emerald-500' : '', checked ? 'bg-emerald-100 border-transparent text-emerald-700 hover:bg-emerald-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none']">
                                 <RadioGroupLabel as="span">
                                     Yes
                                 </RadioGroupLabel>
                             </div>
                         </RadioGroupOption>
                         <RadioGroupOption as="template" value="if_needed" v-slot="{ active, checked }">
-                            <div :class="[active ? 'ring-2 ring-offset-2 ring-yellow-500' : '', checked ? 'bg-yellow-100 border-transparent text-yellow-700 hover:bg-yellow-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none']">
+                            <div :class="[active ? 'ring-2 ring-offset-2 ring-yellow-500' : '', checked ? 'bg-yellow-100 border-transparent text-yellow-700 hover:bg-yellow-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none']">
                                 <RadioGroupLabel as="span">
                                     If Needed
                                 </RadioGroupLabel>
                             </div>
                         </RadioGroupOption>
                         <RadioGroupOption as="template" value="no" v-slot="{ active, checked }">
-                            <div :class="[active ? 'ring-2 ring-offset-2 ring-red-500' : '', checked ? 'bg-red-100 border-transparent text-red-700 hover:bg-red-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none']">
+                            <div :class="[active ? 'ring-2 ring-offset-2 ring-red-500' : '', checked ? 'bg-red-100 border-transparent text-red-700 hover:bg-red-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none']">
                                 <RadioGroupLabel as="span">
                                     No
                                 </RadioGroupLabel>
