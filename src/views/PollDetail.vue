@@ -5,18 +5,16 @@
         </div>
         <section v-show="!isLoading">
             <router-link to="/" class="mb-8 hover:text-blue-600 inline-block sm:text-lg">Back</router-link>
-            <div class="sm:flex sm:items-center">
-                <div class="sm:flex-auto">
-                    <h2 class="text-4xl font-black text-gray-900">{{ poll.title }}</h2>
-                    <p class="mt-2 text-lg text-gray-700">{{ poll.description }}</p>
-                </div>
-                <div v-show="!isAddingSubmission" class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex-shrink-0">
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
-                        @click="isAddingSubmission = true"
-                    >Vote</button>
-                </div>
+            <div>
+                <h2 class="text-4xl font-black text-gray-900">{{ poll.title }}</h2>
+                <p class="mt-2 text-lg text-gray-700">{{ poll.description }}</p>
+            </div>
+            <div v-show="!isAddingSubmission" class="mt-6">
+                <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto"
+                    @click="isAddingSubmission = true"
+                >Vote</button>
             </div>
             <SubmissionForm
                 v-if="isAddingSubmission"
