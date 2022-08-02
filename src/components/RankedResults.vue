@@ -107,12 +107,13 @@ export default {
                     yes: questionValues[key].yes,
                     no: questionValues[key].no,
                     if_needed: questionValues[key].if_needed,
+                    not_no: questionValues[key].yes + questionValues[key].if_needed,
                     total: this.totalSubmissions,
                 }
             })
             const sortedResponses = _orderBy(
                 responses,
-                ['yes', 'if_needed'],
+                ['yes', 'not_no'],
                 ['desc', 'desc']
             )
             return sortedResponses
