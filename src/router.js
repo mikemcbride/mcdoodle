@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import Dashboard from './views/Dashboard.vue'
 import PollDetail from './views/PollDetail.vue'
 import CreatePoll from './views/CreatePoll.vue'
+import Admin from './views/Admin.vue'
 
 const routes = [
     {
@@ -18,6 +19,11 @@ const routes = [
         path: '/new-poll',
         name: 'CreatePoll',
         component: CreatePoll
+    },
+    {
+        path: '/admin',
+        name: 'Admin',
+        component: Admin
     }
 ]
 

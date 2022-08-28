@@ -1,0 +1,48 @@
+<template>
+    <div>
+        <div class="flex items-center justify-between">
+            <h2 class="text-4xl font-black text-gray-900">Polls</h2>
+            <router-link to="/new-poll" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Create Poll</router-link>
+        </div>
+        <div v-if="loading" class="flex justify-center pt-20">
+            <LoadingSpinner />
+        </div>
+        <PollList
+            :polls="polls"
+            :is-admin="true"
+            @remove-poll="handleRemove"
+        />
+    </div>
+</template>
+
+<script>
+import LoadingSpinner from '../components/LoadingSpinner.vue'
+import PollList from '../components/PollList.vue'
+import Polls from '../services/Polls'
+export default {
+    name: 'Dashboard',
+    components: {
+        PollList,
+        LoadingSpinner,
+    },
+    data() {
+        return {
+            loading: false,
+            polls: []
+        }
+    },
+    async created() {
+        this.loading = true
+        this.polls = await Polls.list()
+        this.loading = false
+    },
+    methods: {
+        async handleRemove(pollId) {
+            // poll was already removed
+            // we just need to re-fetch the polls and this one will be gone.
+            this.polls = await Polls.list()
+        }
+    },
+}
+</script>
+

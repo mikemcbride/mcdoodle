@@ -87,4 +87,12 @@ export default class Polls {
 
         return data
     }
+
+    static async remove(pollId) {
+        let { data } = await http.delete('/remove-poll', { params: { id: pollId }})
+        if (pollCache) {
+            pollCache = pollCache.filter(it => it.id !== pollId)
+        }
+        return data
+    }
 }
