@@ -37,12 +37,16 @@ export default {
                     query = {}
                 }
                 const filters = []
-                Object.keys(query).forEach(key => {
-                    filters.push(`{${key}} = "${query[key]}"`)
-                })
                 let opts = {
                     filterByFormula: ''
                 }
+                Object.keys(query).forEach(key => {
+                    if (key === 'filterByFormula') {
+                        opts.filterByFormula = query[key]
+                    } else {
+                        filters.push(`{${key}} = "${query[key]}"`)
+                    }
+                })
                 if (filters.length > 1) {
                     opts.filterByFormula = `AND(${filters.join(', ')})`
                 } else if (filters.length === 1) {

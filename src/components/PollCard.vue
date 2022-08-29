@@ -101,7 +101,6 @@ export default {
             await Polls.remove(this.poll.id)
             this.isDeleting = false
             this.setIsOpen(false)
-            console.log('emitting remove-poll')
             this.$emit('remove-poll', this.poll.id)
         },
         setIsOpen(val) {
