@@ -55,7 +55,10 @@ export default class Polls {
     }
 
     static async create(payload) {
-        let { data } = await http.post('/polls', payload)
+        // create and remove require you to be logged in.
+        const apiKey = window.localStorage.getItem('mcdoodle.apiKey')
+        if (!apiKey) return
+        let { data } = await http.post('/polls', payload, { headers: { 'x-mcdoodle-api-key': apiKey }})
         if (pollCache) {
             pollCache.push(data)
         } else {
@@ -89,7 +92,9 @@ export default class Polls {
     }
 
     static async remove(pollId) {
-        let { data } = await http.delete('/remove-poll', { params: { id: pollId }})
+        const apiKey = window.localStorage.getItem('mcdoodle.apiKey')
+        if (!apiKey) return
+        let { data } = await http.delete('/remove-poll', { params: { id: pollId }}, { headers: { 'x-mcdoodle-api-key': apiKey }})
         if (pollCache) {
             pollCache = pollCache.filter(it => it.id !== pollId)
         }

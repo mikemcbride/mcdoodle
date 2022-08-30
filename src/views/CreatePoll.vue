@@ -26,15 +26,18 @@ export default {
         }
     },
     mounted() {
-      this.isLoggedIn = window.localStorage.getItem('mcdoodle.userId') !== null
+        this.isLoggedIn = window.localStorage.getItem('mcdoodle.userId') !== null &&
+                          window.localStorage.getItem('mcdoodle.apiKey') !== null
     },
     methods: {
         handleLogin(val) {
             if (val !== null) {
                 this.isLoggedIn = true
                 window.localStorage.setItem('mcdoodle.userId', val.user_id)
+                window.localStorage.setItem('mcdoodle.apiKey', val.apiKey)
             } else {
                 window.localStorage.removeItem('mcdoodle.userId')
+                window.localStorage.removeItem('mcdoodle.apiKey')
                 this.isLoggedIn = false
             }
         }

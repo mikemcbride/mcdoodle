@@ -7,6 +7,13 @@ export default async (req, res) => {
         res.status(400)
         res.send('Bad request')
     }
+    // removing a poll requires authorization
+    const apiKeyHeaderIndex = req.rawHeaders.indexOf('x-mcdoodle-api-key')
+    if (req.rawHeaders[apiKeyHeaderIndex + 1] !== process.env.API_SECRET || !req.rawHeaders.includes('x-mcdoodle-api-key')) {
+        res.status(401)
+        res.send('unauthorized request')
+        return
+    }
     try {
         // will return a single poll, since we have an ID parameter
         const poll = await airtable.get('polls', req, res)

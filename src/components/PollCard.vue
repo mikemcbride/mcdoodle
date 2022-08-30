@@ -98,7 +98,11 @@ export default {
     methods: {
         async deletePoll() {
             this.isDeleting = true
-            await Polls.remove(this.poll.id)
+            try {
+                await Polls.remove(this.poll.id)
+            } catch (e) {
+                console.error('unable to remove poll', e)
+            }
             this.isDeleting = false
             this.setIsOpen(false)
             this.$emit('remove-poll', this.poll.id)

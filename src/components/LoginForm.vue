@@ -107,6 +107,7 @@ export default {
         this.setError("Invalid credentials");
         this.$emit("login", null);
         window.localStorage.removeItem("mcdoodle.userId");
+        window.localStorage.removeItem("mcdoodle.apiKey");
       }
     },
   },

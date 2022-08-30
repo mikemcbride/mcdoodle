@@ -42,6 +42,8 @@ export default async (req, res) => {
     if (data.password !== saltedAndHashed) {
         res.status(401)
         data = { message: 'unauthorized' }
+    } else {
+        data.apiKey = process.env.API_SECRET
     }
 
     // remove the password before sending back
