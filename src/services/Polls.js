@@ -94,7 +94,7 @@ export default class Polls {
     static async remove(pollId) {
         const apiKey = window.localStorage.getItem('mcdoodle.apiKey')
         if (!apiKey) return
-        let { data } = await http.delete('/remove-poll', { params: { id: pollId }}, { headers: { 'x-mcdoodle-api-key': apiKey }})
+        let { data } = await http.delete('/remove-poll', { params: { id: pollId }, headers: { 'x-mcdoodle-api-key': apiKey }})
         if (pollCache) {
             pollCache = pollCache.filter(it => it.id !== pollId)
         }
