@@ -65,9 +65,11 @@
             <button
                 type="button"
                 @click="submit"
+                :disabled="isSubmitting"
                 class="w-full sm:w-auto flex sm:inline-flex justify-center items-center px-4 py-3 sm:py-2 border border-transparent text-lg sm:text-sm text-center font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                :class="isSubmitting ? 'bg-opacity-60 cursor-not-allowed' : ''"
             >
-                Submit
+                <Spinner class="text-white h-4 w-4 mr-2" v-if="submitting" /> {{ submitting ? 'Submitting' : 'Submit' }}
             </button>
         </footer>
     </div>
@@ -87,12 +89,14 @@ const selected = ref([])
 const title = ref('')
 const description = ref('')
 const showSuccess = ref(false)
+const isSubmitting = ref(false)
 
 function updateSelected(val) {
     selected.value = val
 }
 
 async function submit() {
+    isSubmitting.value = true
     const newPoll = await Polls.create({
         title: title.value,
         description: description.value,
@@ -111,12 +115,13 @@ async function submit() {
     await Polls.findById(newPoll.id, true)
 
     flashSuccess()
+    isSubmitting.value = true
 }
 function flashSuccess() {
     showSuccess.value = true
     setTimeout(() => {
         showSuccess.value = false
         router.push({ path: '/' })
-    }, 5000)
+    }, 2000)
 }
 </script>
