@@ -16,14 +16,12 @@ export default async (req, res) => {
         return
     }
     try {
-        // will return a single poll, since we have an ID parameter
-        const poll = await airtable.get('polls', req, res)
-
         // fetch related content
-        const [questions, submissions, responses] = await Promise.all([
-            airtable.get('questions', {}, res, filterByRelatedTable('poll_id', poll.id)),
-            airtable.get('submissions', {}, res, filterByRelatedTable('poll_id', poll.id)),
-            airtable.get('responses', {}, res, filterByRelatedTable('poll_id', poll.id)),
+        const [poll, questions, submissions, responses] = await Promise.all([
+            airtable.get('polls', req, res),
+            airtable.get('questions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('submissions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('responses', {}, res, filterByRelatedTable('poll_id', req.query.id)),
         ])
 
         const questionIds = questions.map(it => it.id)

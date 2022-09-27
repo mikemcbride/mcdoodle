@@ -9,11 +9,11 @@ export default async (req, res) => {
         res.send('Bad request')
     }
     try {
-        const poll = await airtable.get('polls', req, res)
-        const [questions, submissions, responses] = await Promise.all([
-            airtable.get('questions', {}, res, filterByRelatedTable('poll_id', poll.id)),
-            airtable.get('submissions', {}, res, filterByRelatedTable('poll_id', poll.id)),
-            airtable.get('responses', {}, res, filterByRelatedTable('poll_id', poll.id)),
+        const [poll, questions, submissions, responses] = await Promise.all([
+            airtable.get('polls', req, res),
+            airtable.get('questions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('submissions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('responses', {}, res, filterByRelatedTable('poll_id', req.query.id)),
         ])
         res.json({
             poll: poll,
