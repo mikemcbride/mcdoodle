@@ -1,4 +1,5 @@
 import airtable from './_airtable'
+import filterByRelatedTable from './_filterByRelatedTable'
 
 export default async (req, res) => {
     // this special route only accepts a GET request and must always have an ID.
@@ -8,17 +9,17 @@ export default async (req, res) => {
         res.send('Bad request')
     }
     try {
-        const poll = await airtable.get('polls', req, res)
-        const [questions, submissions, responses] = await Promise.all([
-            airtable.get('questions', {}, res),
-            airtable.get('submissions', {}, res),
-            airtable.get('responses', {}, res),
+        const [poll, questions, submissions, responses] = await Promise.all([
+            airtable.get('polls', req, res),
+            airtable.get('questions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('submissions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('responses', {}, res, filterByRelatedTable('poll_id', req.query.id)),
         ])
         res.json({
             poll: poll,
-            questions: questions.filter(q => q.poll.includes(poll.id)),
-            submissions: submissions.filter(s => s.poll.includes(poll.id)),
-            responses: responses.filter(r => r.poll.includes(poll.id))
+            questions: questions,
+            submissions: submissions,
+            responses: responses
         })
     } catch (e) {
         console.error('error processing request:', e)
@@ -26,3 +27,4 @@ export default async (req, res) => {
         res.send('error processing request')
     }
 }
+

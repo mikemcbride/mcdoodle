@@ -1,4 +1,5 @@
 import airtable from './_airtable'
+import filterByRelatedTable from './_filterByRelatedTable'
 
 export default async (req, res) => {
     // this special route only accepts a DELETE request.
@@ -15,19 +16,17 @@ export default async (req, res) => {
         return
     }
     try {
-        // will return a single poll, since we have an ID parameter
-        const poll = await airtable.get('polls', req, res)
-
         // fetch related content
-        const [questions, submissions, responses] = await Promise.all([
-            airtable.get('questions', {}, res),
-            airtable.get('submissions', {}, res),
-            airtable.get('responses', {}, res),
+        const [poll, questions, submissions, responses] = await Promise.all([
+            airtable.get('polls', req, res),
+            airtable.get('questions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('submissions', {}, res, filterByRelatedTable('poll_id', req.query.id)),
+            airtable.get('responses', {}, res, filterByRelatedTable('poll_id', req.query.id)),
         ])
 
-        const questionIds = questions.filter(q => q.poll.includes(poll.id)).map(it => it.id)
-        const submissionIds = submissions.filter(s => s.poll.includes(poll.id)).map(it => it.id)
-        const responseIds = responses.filter(r => r.poll.includes(poll.id)).map(it => it.id)
+        const questionIds = questions.map(it => it.id)
+        const submissionIds = submissions.map(it => it.id)
+        const responseIds = responses.map(it => it.id)
 
         // delete all records
         await Promise.all([
