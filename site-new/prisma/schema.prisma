@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Poll {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String
+  status      String
+  questions   Question[]
+  submissions Submission[]
+}
+
+model Question {
+  id        Int        @id @default(autoincrement())
+  value     DateTime
+  poll_id   Int
+  poll      Poll?      @relation(fields: [poll_id], references: [id])
+  responses Response[]
+
+  @@index([poll_id])
+}
+
+model Submission {
+  id        Int        @id @default(autoincrement())
+  person    String
+  poll_id   Int
+  poll      Poll?      @relation(fields: [poll_id], references: [id])
+  responses Response[]
+
+  @@index([poll_id])
+}
+
+model Response {
+  id            Int         @id @default(autoincrement())
+  value         String
+  submission_id Int
+  submission    Submission? @relation(fields: [submission_id], references: [id])
+  question_id   Int
+  question      Question?   @relation(fields: [question_id], references: [id])
+
+  @@index([submission_id])
+  @@index([question_id])
+}
