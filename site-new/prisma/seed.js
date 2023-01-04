@@ -4,17 +4,18 @@ const prisma = new PrismaClient();
 
 const load = async () => {
   try {
-    await prisma.poll.deleteMany();
-    console.log('Deleted records in poll table');
-
+    await prisma.response.deleteMany();
+    console.log('Deleted records in response table');
+    
     await prisma.question.deleteMany();
     console.log('Deleted records in question table');
 
     await prisma.submission.deleteMany();
     console.log('Deleted records in submission table');
+    
+    await prisma.poll.deleteMany();
+    console.log('Deleted records in poll table');
 
-    await prisma.response.deleteMany();
-    console.log('Deleted records in response table');
 
     await prisma.$queryRaw`ALTER TABLE Poll AUTO_INCREMENT = 1`;
     console.log('reset poll auto increment to 1');

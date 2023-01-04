@@ -14,7 +14,7 @@ export default function Poll({ poll }) {
       <div className="px-6 pt-4 pb-2">
         {questions.map(question => {
           return (
-            <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
+            <span key={question.id} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
               {question.value}
             </span>
           )
@@ -23,7 +23,7 @@ export default function Poll({ poll }) {
       <div className="px-6 pt-4 pb-2">
         {submissions.map(submission => {
           return (
-            <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
+            <span key={submission.id} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
               {submission.person}
             </span>
           )

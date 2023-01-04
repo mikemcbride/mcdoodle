@@ -19,7 +19,7 @@ model Poll {
 
 model Question {
   id        Int        @id @default(autoincrement())
-  value     DateTime
+  value     String
   poll_id   Int
   poll      Poll?      @relation(fields: [poll_id], references: [id])
   responses Response[]
