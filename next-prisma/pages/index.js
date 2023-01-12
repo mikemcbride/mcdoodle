@@ -27,10 +27,14 @@ export default function Home({ polls }) {
   );
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ query }) {
+  let status = query.status || 'open'
+
   const polls = await prisma.poll.findMany({
+    where: {
+      status: status
+    },
     include: {
-      questions: true,
       submissions: true,
     },
   });
