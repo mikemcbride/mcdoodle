@@ -27,13 +27,24 @@ export default class Responses {
     }
 
     static async update(payload) {
-        let updateFields = {
-            id: payload.id,
-            value: payload.value,
-            question_id: payload.question,
-            submission_id: payload.submission || [],
+        if (Array.isArray(payload)) {
+            payload = payload.map(item => {
+                return {
+                    id: item.id,
+                    value: item.value,
+                    question_id: item.question_id,
+                    submission_id: item.submission_id
+                }
+            })
+        } else {
+            payload = {
+                id: payload.id,
+                value: payload.value,
+                question_id: payload.question_id,
+                submission_id: payload.submission_id
+            }
         }
-        let { data } = await http.put('/responses', updateFields)
+        let { data } = await http.put('/responses', payload)
         return data
     }
 }

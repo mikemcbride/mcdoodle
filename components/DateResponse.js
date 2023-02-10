@@ -4,13 +4,13 @@ import format from 'date-fns/format';
 import addDays from 'date-fns/addDays';
 import { RadioGroup } from '@headlessui/react';
 
-export default function DateResponse({ question, handleVote }) {
-  const [answer, setAnswer] = useState(null)
-  const formattedDate = format(addDays(new Date(question.value), 1), 'E, MMM do')
+export default function DateResponse({ vote, handleVote }) {
+  const [answer, setAnswer] = useState(vote.response)
+  const formattedDate = format(addDays(new Date(vote.date), 1), 'E, MMM do')
 
   function handleAnswerChange(val) {
     setAnswer(val)
-    handleVote({ question: question.id, response: val })
+    handleVote({ question: vote.question, date: vote.date, response: val })
   }
 
   return (

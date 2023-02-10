@@ -8,16 +8,32 @@ import DateResponse from './DateResponse';
 import Submissions from '../services/submissions.js';
 import Responses from '../services/responses.js';
 
-// import DateResponse from './DateResponse.vue'
-// import Spinner from './Spinner.vue'
-// import Submissions from '../services/Submissions'
-// import Responses from '../services/Responses'
-
-const SubmissionForm = ({ poll, handleCancel, handleSubmitted, }) => {
+const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted, }) => {
   // set up local component data
   const questions = poll.questions;
-  const [votes, setVotes] = useState([])
-  const [submittedBy, setSubmittedBy] = useState('')
+  let initialVotes = []
+  if (submission === null) {
+    initialVotes = questions.map(question => {
+      return {
+        question: question.id,
+        date: question.value,
+        response: null,
+      }
+    })
+  } else {
+    initialVotes = questions.map(question => {
+      const found = submission.responses.find(r => r.question_id === question.id)
+      const response = found ? found.value : null
+      return {
+        question: question.id,
+        date: question.value,
+        response: response
+      }
+    })
+  }
+
+  const [votes, setVotes] = useState(initialVotes)
+  const [submittedBy, setSubmittedBy] = useState(submission === null ? '' : submission.person)
   const [submitting, setSubmitting] = useState(false)
   const [showInvalidMessage, setShowInvalidMessage] = useState(false)
   const [validationErrors, setValidationErrors] = useState([])
@@ -43,9 +59,12 @@ const SubmissionForm = ({ poll, handleCancel, handleSubmitted, }) => {
     if (submittedBy === '') {
       localValidationErrors.push('Name is required')
     }
-    if (votes.length !== questions.length) {
+
+    let emptyVotes = votes.filter(vote => !vote.response)
+    if (votes.length !== questions.length || emptyVotes.length > 0) {
       localValidationErrors.push('Must select an answer for every date')
     }
+
     setValidationErrors(localValidationErrors)
     return localValidationErrors.length === 0
   }
@@ -54,23 +73,46 @@ const SubmissionForm = ({ poll, handleCancel, handleSubmitted, }) => {
     const isValid = doValidation()
     if (!isValid) {
       setShowInvalidMessage(true)
-      // return
+      return
     }
     setShowInvalidMessage(false)
     setSubmitting(true)
 
-    Submissions.create({ person: submittedBy, poll_id: poll.id }).then(data => {
-      const submission = data
-      submission.responses = votes.map(vote => ({
-        question_id: vote.question,
-        value: vote.response,
-        submission_id: data.id
-      }))
-      Responses.create(submission.responses).then(() => {
-        handleSubmitted(submission)
-        setSubmitting(false)
+    if (submission !== null) {
+      const newSubmission = {
+        id: submission.id,
+        person: submittedBy,
+        poll_id: submission.poll_id
+      }
+      const updatedResponses = submission.responses.map(r => {
+        let newVal = votes.find(v => v.question === r.question_id)
+        if (newVal) {
+          r.value = newVal.response
+        }
+        return r
       })
-    })
+
+      Submissions.update(newSubmission).then(() => {
+        Responses.update(updatedResponses).then(data => {
+          newSubmission.responses = data
+          console.log('data:', data)
+          handleSubmitted(newSubmission)
+          setSubmitting(false)
+        })
+      })
+    } else {
+      Submissions.create({ person: submittedBy, poll_id: poll.id }).then(data => {
+        data.responses = votes.map(vote => ({
+          question_id: vote.question,
+          value: vote.response,
+          submission_id: data.id
+        }))
+        Responses.create(data.responses).then(() => {
+          handleSubmitted(data)
+          setSubmitting(false)
+        })
+      })
+    }
   }
 
   return (
@@ -91,8 +133,8 @@ const SubmissionForm = ({ poll, handleCancel, handleSubmitted, }) => {
                 placeholder="Mickey Mouse" />
             </div>
           </div>
-          {questions.map(question => {
-            return <DateResponse key={question.id} question={question} handleVote={setVote} />
+          {votes.map(vote => {
+            return <DateResponse key={vote.question} vote={vote} handleVote={setVote} />
           })}
           {showInvalidMessage &&
             <div className="rounded-md bg-red-50 p-4">
