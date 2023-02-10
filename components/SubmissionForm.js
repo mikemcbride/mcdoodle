@@ -119,7 +119,7 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted, }) =>
     <div className="my-12 -mx-4 sm:-mx-6 lg:-mx-8">
       <div className="inline-block min-w-full align-middle md:px-6 lg:px-8">
         <div className="md:rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white p-4 md:p-6 space-y-6 md:space-y-8">
-          <h2 className="font-bold text-2xl">Add your response</h2>
+          <h2 className="font-bold text-2xl">{submission !== null ? `Edit your response` : `Add your response`}</h2>
           <div>
             <label htmlFor="submitter-name" className="block text-sm font-medium text-gray-700">Name</label>
             <div className="mt-1">
