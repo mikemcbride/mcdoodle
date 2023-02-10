@@ -2,7 +2,12 @@ import clsx from 'clsx';
 
 export default function ResponsePill({ questionId, responses }) {
   const response = responses.find(r => r.question_id === questionId);
-  const text = response.value;
+  let text = ''
+  if (response?.value) {
+    text = response.value
+  } else {
+    text = 'null'
+  }
   const formatted = !text ? null : text.split('_').map(word => `${word.charAt(0).toUpperCase()}${word.slice(1)}`).join(' ')
   let colors = ''
   if (text === 'yes') {

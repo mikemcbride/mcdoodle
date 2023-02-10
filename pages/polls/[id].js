@@ -5,15 +5,43 @@ import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
 import SubmissionForm from '../../components/SubmissionForm';
+import { PencilSquareIcon } from '@heroicons/react/24/solid';
 
 const PollDetail = ({ poll, submissions }) => {
   const [isAddingSubmission, setIsAddingSubmission] = useState(false);
   const [localSubmissions, setLocalSubmissions] = useState(submissions);
+  const [submissionToEdit, setSubmissionToEdit] = useState(null);
 
   function handleFormSubmission(data) {
-    console.log('data from submission:', data);
-    setLocalSubmissions([...localSubmissions, data]);
+    // check if local submissions includes the id.
+    // if so, replace it. otherwise, add it.
+    if (submissionToEdit !== null) {
+      setLocalSubmissions(localSubmissions.map(s => {
+        if (s.id === data.id) {
+          return data
+        } else {
+          return s
+        }
+      }))
+      setSubmissionToEdit(null);
+    } else {
+      setLocalSubmissions([...localSubmissions, data]);
+    }
     setIsAddingSubmission(false);
+  }
+
+  function handleCancelSubmission() {
+    setIsAddingSubmission(false);
+    setSubmissionToEdit(null);
+  }
+
+  function handleEditSubmission(submission) {
+    // don't allow editing if we're already editing.
+    if (submissionToEdit !== null) {
+      return
+    }
+    setSubmissionToEdit(submission);
+    setIsAddingSubmission(true);
   }
 
   return (
@@ -34,7 +62,7 @@ const PollDetail = ({ poll, submissions }) => {
       )}
 
       {isAddingSubmission && (
-      <SubmissionForm poll={poll} handleCancel={() => setIsAddingSubmission(false)} handleSubmitted={handleFormSubmission} />
+      <SubmissionForm poll={poll} submission={submissionToEdit} handleCancel={handleCancelSubmission} handleSubmitted={handleFormSubmission} />
       )}
 
       <h3 className="mt-8 mb-4 text-2xl font-bold">Responses</h3>
@@ -47,7 +75,9 @@ const PollDetail = ({ poll, submissions }) => {
                   <tr>
                     <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Date</th>
                     {localSubmissions.map(submission => (
-                      <th key={`col_${submission.id}`} scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">{submission.person}</th>
+                      <th key={`col_${submission.id}`} scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        <button className="inline-flex items-center group" title="Edit response" onClick={() => handleEditSubmission(submission)}>{submission.person} <PencilSquareIcon className="opacity-0 group-hover:opacity-100 h-3 w-3 ml-1 text-gray-500" /></button>
+                      </th>
                     ))}
                   </tr>
                 </thead>
