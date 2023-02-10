@@ -1,0 +1,13 @@
+name: Health check cron job
+on:
+  schedule:
+    - cron: '0 12 * * *'
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call endpoint to do a health check
+        run: |
+          curl --request POST \
+          --url '${{ secrets.SITE_URL }}/api/health-check' \
+          --header 'x-mcdoodle-api-key: ${{ secrets.API_SECRET }}'
