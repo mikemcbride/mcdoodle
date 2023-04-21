@@ -29,7 +29,7 @@ export default function RouteGuard({ children }) {
         // redirect to login page if accessing a private page and not logged in 
         const privatePaths = ['/admin'];
         const path = url.split('?')[0];
-        let LS_USER_ID = window.localStorage.getItem('mcdoodle.userId')
+        const LS_USER_ID = window.localStorage.getItem('mcdoodle.userId')
         if (privatePaths.includes(path) && LS_USER_ID === null) {
             setAuthorized(false);
             router.push({
