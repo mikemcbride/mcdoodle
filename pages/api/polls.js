@@ -51,12 +51,17 @@ export default async function handler(req, res) {
       const questions = await prisma.question.findMany({ where: { poll_id: pollId }})
       const questionIds = questions.map(q => q.id)
 
+      // must delete all responses before deleting questions and submissions
+      await prisma.response.deleteMany({ where: { question_id: { in: questionIds }}})
+
+      // we can delete questions and submissions at the same time
       await Promise.all([
-        prisma.response.deleteMany({ where: { question_id: { in: questionIds }}}),
         prisma.question.deleteMany({ where: { poll_id: pollId }}),
         prisma.submission.deleteMany({ where: { poll_id: pollId }}),
-        prisma.poll.delete({ where: { id: pollId }})
       ])
+
+      // finally we can delete the poll
+      await prisma.poll.delete({ where: { id: pollId }})
       res.json({
         message: 'ok'
       })

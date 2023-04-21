@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link';
 import PollList from '../components/PollList.js';
 import LoginForm from '../components/LoginForm.js';
+import prisma from '../lib/prisma';
 
 export default function Admin({ polls }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
