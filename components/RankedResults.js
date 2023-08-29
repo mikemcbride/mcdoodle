@@ -39,7 +39,7 @@ export default function RankedResults({ submissions, questions }) {
   })
   const sortedResponses = _orderBy(
     responses,
-    ['yes', 'not_no'],
+    ['not_no', 'yes'],
     ['desc', 'desc']
   )
 
