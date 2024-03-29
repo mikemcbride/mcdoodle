@@ -35,8 +35,5 @@ yarn-error.log*
 # vercel
 .vercel
 
-# seed data
-/prisma/data.json
-
 # local db files
 local.db*
