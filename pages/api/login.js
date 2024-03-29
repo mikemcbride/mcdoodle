@@ -6,6 +6,7 @@ import { scryptSync } from 'crypto'
 const PASSWORD_SALT = process.env.PASSWORD_SALT
 
 export default async function handler(req, res) {
+    console.log('inside login handler', req)
     if (req.method !== 'POST') {
         return {}
     }
@@ -15,6 +16,7 @@ export default async function handler(req, res) {
     console.log('saltedAndHashed', saltedAndHashed)
 
     let data = await db.select().from(users).where(eq(users.email, req.body.email))
+    console.log('data:', data)
 
     // if password from db doesn't match, they didn't successfully log in. Throw a 401.
     if (data.length > 0 && data[0].password !== saltedAndHashed) {
