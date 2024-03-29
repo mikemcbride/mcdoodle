@@ -62,30 +62,6 @@ export default class Polls {
         return data
     }
 
-    static async update(payload) {
-        let updateFields = {
-            id: payload.id,
-            title: payload.title,
-            description: payload.description,
-            status: payload.status,
-            questions: payload.questions,
-            submissions: payload.submissions,
-        }
-        let { data } = await http.put('/polls', updateFields)
-
-        // update the pollCache with updated poll value
-        if (pollCache) {
-            pollCache = pollCache.map((it) => {
-                if (it.id === data.id) {
-                    return data
-                }
-                return it
-            })
-        }
-
-        return data
-    }
-
     static async remove(pollId) {
         const apiKey = window.localStorage.getItem('mcdoodle.apiKey')
         if (!apiKey) return

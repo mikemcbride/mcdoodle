@@ -1,19 +1,18 @@
-import prisma from '../../lib/prisma.js';
+import { db } from '../../db/index.js';
+import { users } from '../../db/schema/users';
+import { eq } from 'drizzle-orm';
+
 
 export default async (req, res) => {
-    let whereClause = {}
-
     // allow find by email or user_id
+    let q = db.select().from(users)
     if (req?.query?.email) {
-        whereClause.email = { equals: req.query.email }
+        q.where(eq(users.email, req.query.email))
     } else if (req?.query?.userId) {
-        whereClause.userId = { equals: req.query.userId }
+        q.where(eq(users.id, req.query.userId))
     }
 
-    let data = await prisma.user.findMany({
-        where: whereClause,
-        orderBy: { id: 'asc' }
-    })
+    let data = await q
 
     // remove the password
     if (Array.isArray(data)) {
@@ -21,6 +20,8 @@ export default async (req, res) => {
             delete user.password
             return user
         })
+    } else {
+        delete data.password
     }
 
     return res.status(200).json(data)

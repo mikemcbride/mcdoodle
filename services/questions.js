@@ -31,15 +31,4 @@ export default class Questions {
         let { data } = await http.post('/questions', payload)
         return data
     }
-
-    static async update(payload) {
-        let updateFields = {
-            id: payload.id,
-            value: payload.value,
-            poll: payload.poll,
-            responses: payload.responses || [],
-        }
-        let { data } = await http.put('/questions', updateFields)
-        return data
-    }
 }

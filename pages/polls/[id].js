@@ -1,4 +1,3 @@
-import prisma from '../../lib/prisma';
 import Link from 'next/link';
 import { useState } from 'react';
 import _orderBy from 'lodash/orderBy';
@@ -6,8 +5,12 @@ import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
 import SubmissionForm from '../../components/SubmissionForm';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
+import { getPolls } from '../api/polls';
+import { getSubmissions } from '../api/submissions';
+import { getQuestions } from '../api/questions';
+import { getResponses } from '../api/responses';
 
-const PollDetail = ({ poll, submissions }) => {
+const PollDetail = ({ poll, submissions}) => {
   const [isAddingSubmission, setIsAddingSubmission] = useState(false);
   const [localSubmissions, setLocalSubmissions] = useState(submissions);
   const [submissionToEdit, setSubmissionToEdit] = useState(null);
@@ -62,7 +65,7 @@ const PollDetail = ({ poll, submissions }) => {
       )}
 
       {isAddingSubmission && (
-      <SubmissionForm poll={poll} submission={submissionToEdit} handleCancel={handleCancelSubmission} handleSubmitted={handleFormSubmission} />
+        <SubmissionForm poll={poll} submission={submissionToEdit} handleCancel={handleCancelSubmission} handleSubmitted={handleFormSubmission} />
       )}
 
       <h3 className="mt-8 mb-4 text-2xl font-bold">Responses</h3>
@@ -105,36 +108,28 @@ const PollDetail = ({ poll, submissions }) => {
           <RankedResults questions={poll.questions} submissions={localSubmissions} />
         </div>
       )}
-    </section >
+    </section>
   )
 }
 
 export default PollDetail
 
 export async function getServerSideProps({ params }) {
-  const [poll, submissions] = await Promise.all([
-    prisma.poll.findUnique({
-      where: {
-        id: parseInt(params.id, 10)
-      },
-      include: {
-        questions: true,
-      },
-    }),
-    prisma.submission.findMany({
-      where: {
-        poll_id: parseInt(params.id, 10)
-      },
-      include: {
-        responses: true
-      }
-    })
+  // poll has questions embedded,
+  // submissions have responses embedded.
+  const [{ data: pollData }, { data: submissionData }, { data: questionData }, { data: responseData }] = await Promise.all([
+    getPolls({ id: params.id }),
+    getSubmissions({ poll_id: params.id }),
+    getQuestions({ poll_id: params.id }),
+    getResponses({ poll_id: params.id }),
   ]);
 
-  const sortedQuestions = _orderBy(poll.questions, 'value');
-  poll.questions = sortedQuestions;
-
+  pollData.questions = _orderBy(questionData, 'value');
+  submissionData.forEach(submission => {
+    submission.responses = responseData.filter(response => response.submission_id === submission.id);
+  });
   return {
-    props: { poll, submissions },
+    props: { poll: pollData, submissions: submissionData },
   };
 }
+

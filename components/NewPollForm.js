@@ -30,9 +30,10 @@ export default function NewPollForm() {
       status: 'open', // new polls will default to being open
     }).then(newPoll => {
       console.log('new poll:', newPoll)
-      Questions.create(selected.map(val => ({
+      Questions.create(selected.map((val, idx) => ({
         value: val,
         poll_id: newPoll.id,
+        order: idx
       }))).then(() => {
         setIsSubmitting(false)
         flashSuccess()

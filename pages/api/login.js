@@ -1,36 +1,29 @@
-import prisma from '../../lib/prisma.js';
+import { db } from '../../db/index.js';
+import { users } from '../../db/schema/users';
+import { eq } from 'drizzle-orm';
 import { scryptSync } from 'crypto'
 
 const PASSWORD_SALT = process.env.PASSWORD_SALT
 
-export default async function handler (req, res) {
+export default async function handler(req, res) {
+    console.log('inside login handler', req)
     if (req.method !== 'POST') {
         return {}
     }
 
-    let whereClause = {}
-
-    if (req.body.email) {
-        if (req.body.email.includes('@')) {
-            // it's an email
-            whereClause.email = { equals: req.body.email }
-        } else {
-            // it's a username
-            whereClause.user_name = { equals: req.body.email }
-        }
-    }
-
-    let data = await prisma.user.findFirst({ where: whereClause })
-
     // now check if the password is valid.
-    // we salt and hash passwords, so we'll have to do that with the text that was
     const saltedAndHashed = scryptSync(req.body.password, PASSWORD_SALT, 64).toString('hex')
+    console.log('saltedAndHashed', saltedAndHashed)
+
+    let data = await db.select().from(users).where(eq(users.email, req.body.email))
+    console.log('data:', data)
 
     // if password from db doesn't match, they didn't successfully log in. Throw a 401.
-    if (data.password !== saltedAndHashed) {
+    if (data.length > 0 && data[0].password !== saltedAndHashed) {
         res.status(401)
         data = { message: 'unauthorized' }
     } else {
+        data = data[0]
         data.apiKey = process.env.API_SECRET
     }
 

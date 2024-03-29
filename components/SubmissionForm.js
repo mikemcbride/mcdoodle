@@ -95,7 +95,6 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted, }) =>
       Submissions.update(newSubmission).then(() => {
         Responses.update(updatedResponses).then(data => {
           newSubmission.responses = data
-          console.log('data:', data)
           handleSubmitted(newSubmission)
           setSubmitting(false)
         })
@@ -105,7 +104,8 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted, }) =>
         data.responses = votes.map(vote => ({
           question_id: vote.question,
           value: vote.response,
-          submission_id: data.id
+          submission_id: data.id,
+          poll_id: poll.id
         }))
         Responses.create(data.responses).then(() => {
           handleSubmitted(data)
