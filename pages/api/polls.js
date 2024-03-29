@@ -1,14 +1,35 @@
-import prisma from './../../lib/prisma.js';
+import { db } from '../../db/index.js';
+import { polls } from '../../db/schema/polls';
+import { questions } from '../../db/schema/questions';
+import { submissions } from '../../db/schema/submissions';
+import { responses } from '../../db/schema/responses';
+import { eq } from 'drizzle-orm';
+
+export async function getPolls(opts = {}) {
+  const q = db.select().from(polls)
+  if (opts.id) {
+    q.where(eq(polls.id, opts.id))
+  }
+  try {
+    const data = await q
+    // data is an array.
+    // if we asked for a single poll, we should return a single object.
+    if (Array.isArray(data) && data.length === 0 && opts.id) {
+      return { status: 404, data: { msg: 'Not found' } }
+    } else if (Array.isArray(data) && data.length === 1 && opts.id) {
+      return { status: 200, data: data[0] }
+    }
+    return { status: 200, data }
+  } catch (err) {
+    console.error(err);
+    return { status: 500, data: { msg: 'Something went wrong' } }
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    try {
-      const data = await prisma.poll.findMany({});
-      return res.status(200).json({ data });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ msg: 'Something went wrong' });
-    }
+    const { status, data } = await getPolls(req.query);
+    return res.status(status).json(data);
   } else if (req.method === 'POST') {
     const apiKeyHeaderIndex = req.rawHeaders.indexOf('x-mcdoodle-api-key')
     if (req.method === 'POST' && (req.rawHeaders[apiKeyHeaderIndex + 1] !== process.env.API_SECRET || !req.rawHeaders.includes('x-mcdoodle-api-key'))) {
@@ -17,12 +38,14 @@ export default async function handler(req, res) {
     } else {
       try {
         const data = req.body
-        let response = null
-        if (Array.isArray(data)) {
-          // multiple insert
-          response = await prisma.poll.createMany({ data })
-        } else {
-          response = await prisma.poll.create({ data })
+        // in drizzle, multiple insert and single insert use the same mechanism.
+        // if `data` is an array, it will insert multiple.
+        let response = await db.insert(polls).values(data).returning();
+        // if we only inserted one row, we don't need to return an array.
+        if (Array.isArray(response)) {
+          if (response.length === 1) {
+            response = response[0];
+          }
         }
         return res.status(200).json(response);
       } catch (err) {
@@ -45,25 +68,20 @@ export default async function handler(req, res) {
       return
     }
     try {
-      // responses aren't directly tied to a poll, so we need to find all poll questions first,
-      // and then delete all responses tied to those questions
-      const pollId = parseInt(req.query.id, 10)
-      const questions = await prisma.question.findMany({ where: { poll_id: pollId }})
-      const questionIds = questions.map(q => q.id)
-
-      // must delete all responses before deleting questions and submissions
-      await prisma.response.deleteMany({ where: { question_id: { in: questionIds }}})
-
-      // we can delete questions and submissions at the same time
+      // foreign key constraints:
+      // 1. responses need to be deleted first
+      await db.delete(responses).where(eq(responses.poll_id, req.query.id)),
+      // 2. submissions and questions can be deleted together
       await Promise.all([
-        prisma.question.deleteMany({ where: { poll_id: pollId }}),
-        prisma.submission.deleteMany({ where: { poll_id: pollId }}),
+        db.delete(submissions).where(eq(submissions.poll_id, req.query.id)),
+        db.delete(questions).where(eq(questions.poll_id, req.query.id)),
       ])
+      // 3. polls must be deleted last, as all tables have a poll_id
+      await db.delete(polls).where(eq(polls.id, req.query.id))
 
-      // finally we can delete the poll
-      await prisma.poll.delete({ where: { id: pollId }})
-      res.json({
-        message: 'ok'
+      res.status(200).json({
+        message: 'ok',
+        deletedId: req.query.id,
       })
     } catch (e) {
       console.error('error processing request:', e)

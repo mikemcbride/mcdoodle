@@ -25,6 +25,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.envrc
 .env
 .env.local
 .env.development.local
@@ -36,3 +37,6 @@ yarn-error.log*
 
 # seed data
 /prisma/data.json
+
+# local db files
+local.db*
