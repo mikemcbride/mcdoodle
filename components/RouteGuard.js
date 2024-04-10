@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../context/AuthContext';
 
 export default function RouteGuard({ children }) {
     const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
+    const { user } = useAuth();
 
     useEffect(() => {
         // on initial load - run auth check 
@@ -27,10 +29,15 @@ export default function RouteGuard({ children }) {
 
     function authCheck(url) {
         // redirect to login page if accessing a private page and not logged in 
-        const privatePaths = ['/admin'];
+        const privatePaths = ['/settings', '/new-poll'];
+        const adminPaths = ['/admin', '/users'];
         const path = url.split('?')[0];
-        const LS_USER_ID = window.localStorage.getItem('mcdoodle.userId')
-        if (privatePaths.includes(path) && LS_USER_ID === null) {
+        const LS_USER_ID = user?.id
+        // if user is an admin, allow access to admin paths.
+        if (user?.isAdmin) {
+            privatePaths.push(...adminPaths);
+        }
+        if (privatePaths.includes(path) && !LS_USER_ID) {
             setAuthorized(false);
             router.push({
                 pathname: '/login',

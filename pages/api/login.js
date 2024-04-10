@@ -13,11 +13,8 @@ export default async function handler(req, res) {
 
     // now check if the password is valid.
     const saltedAndHashed = scryptSync(req.body.password, PASSWORD_SALT, 64).toString('hex')
-    console.log('saltedAndHashed', saltedAndHashed)
-
     let data = await db.select().from(users).where(eq(users.email, req.body.email))
-    console.log('data:', data)
-
+    
     // if password from db doesn't match, they didn't successfully log in. Throw a 401.
     if (data.length > 0 && data[0].password !== saltedAndHashed) {
         res.status(401)

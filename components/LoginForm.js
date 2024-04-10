@@ -2,6 +2,7 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import Users from '../services/users.js';
 import LoginError from './LoginError.js';
+import Link from 'next/link.js';
 
 export default function LoginForm({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -13,15 +14,7 @@ export default function LoginForm({ onLogin }) {
     return email && password && !submitting;
   }
   function handleLogin(val) {
-    if (val === null) {
-      window.localStorage.removeItem('mcdoodle.userId')
-      window.localStorage.removeItem('mcdoodle.apiKey')
-      onLogin(false)
-    } else {
-      window.localStorage.setItem('mcdoodle.userId', val.id)
-      window.localStorage.setItem('mcdoodle.apiKey', val.apiKey)
-      onLogin(true)
-    }
+    onLogin(val)
   }
 
   function doLogin() {
@@ -43,8 +36,6 @@ export default function LoginForm({ onLogin }) {
       console.error("Error logging in:", e);
       setErrorMessage("Invalid credentials");
       handleLogin(null)
-      window.localStorage.removeItem("mcdoodle.userId");
-      window.localStorage.removeItem("mcdoodle.apiKey");
     })
   }
 
@@ -58,7 +49,7 @@ export default function LoginForm({ onLogin }) {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow rounded-lg sm:px-10">
-          <form submit="submit" className="space-y-6">
+          <form className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Username or email
@@ -78,9 +69,12 @@ export default function LoginForm({ onLogin }) {
             </div>
 
             <div className="mt-4">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">Forgot password?</Link>
+              </div>
               <div className="mt-1">
                 <input
                   id="password"
@@ -97,7 +91,7 @@ export default function LoginForm({ onLogin }) {
 
             <div>
               <button
-                type="submit"
+                type="button"
                 disabled={!canSubmit()}
                 className={clsx("w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600", !canSubmit() && 'bg-opacity-50 cursor-not-allowed')}
                 onClick={doLogin}
@@ -105,6 +99,12 @@ export default function LoginForm({ onLogin }) {
                 Login
               </button>
             </div>
+            <p className="text-center text-sm text-gray-500">
+              Not a member?{' '}
+              <Link href="/sign-up" className="font-semibold leading-6 text-blue-600 hover:text-blue-500">
+                Sign up for a free account
+              </Link>
+            </p>
 
             <LoginError message={errorMessage} />
           </form>

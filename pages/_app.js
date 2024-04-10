@@ -1,13 +1,17 @@
 import '../styles/globals.css';
-import RouteGuard from '../components/RouteGuard.js'
-// wrap the <Component /> in <RouteGuard>
-// see this article:
-// https://jasonwatmore.com/post/2021/08/30/next-js-redirect-to-login-page-if-unauthenticated
+import RouteGuard from '../components/RouteGuard.js';
+import AuthProvider from '../context/AuthContext.js';
+import AppHeader from '../components/AppHeader.js';
 
-export default function MyApp({ Component, pageProps }) {
+export default function App({ Component, pageProps }) {
   return (
-    <RouteGuard>
-      <Component {...pageProps} />
-    </RouteGuard>
+    <AuthProvider>
+      <RouteGuard>
+        <AppHeader />
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <Component {...pageProps} />
+        </div>
+      </RouteGuard>
+    </AuthProvider>
   )
 }
