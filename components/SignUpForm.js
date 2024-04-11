@@ -62,13 +62,13 @@ export default function SignUpForm() {
           {!showSuccess && (
             <form className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
                   First Name
                 </label>
                 <div className="mt-1">
                   <input
-                    id="name"
-                    name="name"
+                    id="first_name"
+                    name="first_name"
                     type="text"
                     value={firstName}
                     onChange={e => setFirstName(e.target.value)}
@@ -79,13 +79,13 @@ export default function SignUpForm() {
                 </div>
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
                   Last Name
                 </label>
                 <div className="mt-1">
                   <input
-                    id="name"
-                    name="name"
+                    id="last_name"
+                    name="last_name"
                     type="text"
                     value={lastName}
                     onChange={e => setLastName(e.target.value)}
