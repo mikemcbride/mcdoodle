@@ -26,11 +26,13 @@
   "dependencies": {
     "@libsql/client": "^0.5.6",
     "@paralleldrive/cuid2": "^2.2.2",
+    "@react-email/components": "^0.0.16",
     "axios": "^1.3.2",
     "clsx": "^1.2.1",
     "drizzle-orm": "^0.30.2",
     "next": "^13.1.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "resend": "^3.2.0"
   }
 }

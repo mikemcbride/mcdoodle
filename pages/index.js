@@ -3,8 +3,15 @@ import Link from 'next/link';
 import PollList from '../components/PollList';
 import { getPolls } from './api/polls';
 import { getSubmissions } from './api/submissions';
+import { useAuth } from '../context/AuthContext';
 
 export default function Home({ polls }) {
+  const { user } = useAuth();
+  if (user) {
+    console.log('signed in, only show polls created by this user?')
+  } else {
+    console.log('not logged in, hide all polls?')
+  }
   return (
     <div className="min-h-full">
       <Head>
@@ -16,7 +23,7 @@ export default function Home({ polls }) {
       <div>
         <div className="flex items-center justify-between">
           <h2 className="text-4xl font-black text-gray-900">Polls</h2>
-          <Link href="/new-poll" className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Create Poll</Link>
+          {user && <Link href="/new-poll" className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Create Poll</Link>}
         </div>
         <PollList polls={polls} />
       </div>
