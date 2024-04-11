@@ -60,13 +60,13 @@ export default function AppMenu() {
           </Menu.Item>}
           <Menu.Item>
             {({ active }) => (
-              <a
+              <Link
                 href="/profile"
                 className={classNames(active ? 'bg-gray-100' : '', 'px-4 py-2 text-sm text-gray-700 flex items-center gap-4')}
               >
                 <UserIcon className="h-4 w-4 text-gray-500" />
                 <span>Profile</span>
-              </a>
+              </Link>
             )}
           </Menu.Item>
           <Menu.Item>

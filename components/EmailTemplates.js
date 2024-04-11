@@ -25,13 +25,13 @@ export const VerifyEmailTemplate = ({ email, firstName, lastName, token }) => {
           <Section>
             <Text style={styles.text}>Hi {firstName},</Text>
             <Text style={styles.text}>
-              Thanks for registering. We need to verify your email account before we can let you log in (you understand, right?). Click the link below and you'll be on your way!
+              Thanks for registering. We need to verify your email account before we can let you log in (you understand, right?). Click the link below and you&apos;ll be on your way!
             </Text>
             <Button style={styles.button} href={`${process.env.NEXT_PUBLIC_BASE_URL}/verify-account?token=${token}&action=verify&email=${email}`}>
               Verify Account
             </Button>
             <Text style={styles.text}>
-              If you did not register for an account, please click "Reject" below to prevent your email being used for this account registration.
+              If you did not register for an account, please click &quot;Reject&quot; below to prevent your email being used for this account registration.
             </Text>
             <Button style={styles.button} href={`${process.env.NEXT_PUBLIC_BASE_URL}/verify-account?token=${token}&email=${email}&action=reject`}>
               Reject Request

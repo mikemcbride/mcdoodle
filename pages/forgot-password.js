@@ -40,7 +40,7 @@ export default function ForgotPassword() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Forgot your password?
         </h2>
-        <p className="mt-6 text-center text-lg text-gray-700">No problem, it happens to the best of us. Just enter your email address below and we'll send you a link to reset your password.</p>
+        <p className="mt-6 text-center text-lg text-gray-700">No problem, it happens to the best of us. Just enter your email address below and we&apos;ll send you a link to reset your password.</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
