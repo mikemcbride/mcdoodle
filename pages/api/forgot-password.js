@@ -38,7 +38,7 @@ export default async (req, res) => {
         from: 'McDoodle <mcdoodle+password-reset@email.mcbrides.us>',
         to: [verificationRecord.email],
         subject: 'McDoodle Password Reset Request',
-        react: ForgotPasswordTemplate({ token: verificationRecord.id }),
+        react: ForgotPasswordTemplate({ token: verificationRecord.id, user: userRes[0] }),
     });
 
     if (error) {

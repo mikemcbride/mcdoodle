@@ -17,7 +17,8 @@ export default function LoginForm({ onLogin }) {
     onLogin(val)
   }
 
-  function doLogin() {
+  function doLogin(e) {
+    e.preventDefault()
     if (!email || !password) {
       setErrorMessage("Please fill in all fields")
       return;
@@ -29,13 +30,11 @@ export default function LoginForm({ onLogin }) {
         handleLogin(user)
       } else {
         setErrorMessage("Invalid credentials");
-        handleLogin(null);
       }
     }).catch(e => {
       setSubmitting(false);
       console.error("Error logging in:", e);
-      setErrorMessage("Invalid credentials");
-      handleLogin(null)
+      setErrorMessage(e.response.data.message);
     })
   }
 
@@ -73,7 +72,7 @@ export default function LoginForm({ onLogin }) {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">Forgot password?</Link>
+                <Link href="/forgot-password" tabIndex="-1" className="text-sm text-blue-500 hover:underline">Forgot password?</Link>
               </div>
               <div className="mt-1">
                 <input
@@ -88,6 +87,8 @@ export default function LoginForm({ onLogin }) {
                 />
               </div>
             </div>
+
+            <LoginError message={errorMessage} />
 
             <div>
               <button
@@ -105,8 +106,6 @@ export default function LoginForm({ onLogin }) {
                 Sign up for a free account
               </Link>
             </p>
-
-            <LoginError message={errorMessage} />
           </form>
         </div>
       </div>

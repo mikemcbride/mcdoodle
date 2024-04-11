@@ -15,10 +15,11 @@ export default class User {
     }
 
     static async update(id, payload) {
+        console.log('payload:', payload)
         try {
             // so we know who is making the request
             const lsUser = JSON.parse(localStorage.getItem('mcdoodle.user'))
-            const { data } = await http.put(`/users/${id}`, payload, {
+            const { data } = await http.put('/users', { id, ...payload }, {
                 headers: {
                     'x-mcdoodle-user-id': lsUser.id,
                 },

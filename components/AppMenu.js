@@ -1,13 +1,9 @@
 import { Menu, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useAuth } from '../context/AuthContext.js'
 import { UserCircleIcon, UserIcon, UsersIcon, KeyIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/20/solid'
-
-const links = [
-  { href: '/users', label: 'Manage Users', admin: true },
-  { href: '/sign-out', label: 'Sign out' },
-]
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -15,13 +11,19 @@ function classNames(...classes) {
 
 export default function AppMenu() {
   const { user, logout } = useAuth()
+  const router = useRouter()
+
+  function handleSignOut() {
+    logout()
+    router.push('/login')
+  }
   return (
     <Menu as="div" className="relative ml-3">
       <div>
         <Menu.Button className="relative flex text-sm text-white items-center gap-2">
           <span className="sr-only">Open user menu</span>
           <UserCircleIcon className="h-6 w-6" />
-          <span className="hidden md:block">{user.name}</span>
+          <span className="hidden md:block">{user.firstName}</span>
         </Menu.Button>
       </div>
       <Transition
@@ -72,7 +74,7 @@ export default function AppMenu() {
               <button
                 type="button"
                 className={classNames(active ? 'bg-gray-100' : '', 'px-4 py-2 text-sm text-gray-700 w-full flex items-center gap-4')}
-                onClick={logout}>
+                onClick={handleSignOut}>
                 <ArrowLeftOnRectangleIcon className="h-4 w-4 text-gray-500" />
                 <span>Sign out</span>
               </button>

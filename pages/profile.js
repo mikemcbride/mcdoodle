@@ -6,33 +6,43 @@ import LoginError from '../components/LoginError.js';
 
 export default function Profile() {
   const { user, updateUser } = useAuth();
-  const [email, setEmail] = useState(user.email)
-  const [name, setName] = useState(user.name)
+  const [email, setEmail] = useState(user?.email)
+  const [firstName, setFirstName] = useState(user?.firstName)
+  const [lastName, setLastName] = useState(user?.lastName)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   function canSubmit() {
-    return name && email && !submitting;
+    return firstName && lastName && email && !submitting;
   }
 
   function handleSubmit() {
     if (!canSubmit()) return
 
+    setShowSuccess(false)
+    setSubmitting(true)
+
     const payload = {
       email,
-      name,
+      firstName,
+      lastName,
     }
 
     if (password && password === confirmPassword) {
       payload.password = password;
     }
 
-    // TODO: PUT to the API
     Users.update(user.id, payload).then(val => {
-      console.log('updated user:', val)
-      // updateUser(val)
+      setSubmitting(false)
+      setShowSuccess(true)
+      setErrorMessage('')
+      updateUser(val)
+    }).catch(e => {
+      setShowSuccess(false)
+      setErrorMessage('Error updating profile')
     })
   }
 
@@ -48,17 +58,34 @@ export default function Profile() {
         <div className="bg-white py-8 px-4 shadow rounded-lg sm:px-10">
           <form className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Name
+              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                First Name
               </label>
               <div className="mt-1">
                 <input
-                  id="name"
-                  name="name"
+                  id="first_name"
+                  name="first_name"
                   type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
                   placeholder="What your mom calls you"
+                  required=""
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue focus:border-blue sm:text-sm"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                Last Name
+              </label>
+              <div className="mt-1">
+                <input
+                  id="last_name"
+                  name="last_name"
+                  type="text"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  placeholder="What your coach calls you"
                   required=""
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue focus:border-blue sm:text-sm"
                 />
@@ -82,6 +109,8 @@ export default function Profile() {
               </div>
             </div>
 
+            <hr />
+            <p className="text-gray-600 text-sm">If you want to change your password, you can do so here. If you leave the fields blank, we will leave it as-is.</p>
             <div className="mt-4">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -125,10 +154,15 @@ export default function Profile() {
                 className={clsx("w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600", !canSubmit() && 'bg-opacity-50 cursor-not-allowed')}
                 onClick={handleSubmit}
               >
-                Submit
+                Update Profile
               </button>
             </div>
             <LoginError message={errorMessage} />
+            {showSuccess && (
+              <div className="rounded-md bg-emerald-100 p-4">
+                <h3 className="text-sm font-medium text-emerald-800">Profile successfully updated</h3>
+              </div>
+            )}
           </form>
         </div>
       </div>

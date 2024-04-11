@@ -7,6 +7,11 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Home({ polls }) {
   const { user } = useAuth();
+  if (user) {
+    console.log('signed in, only show polls created by this user?')
+  } else {
+    console.log('not logged in, hide all polls?')
+  }
   return (
     <div className="min-h-full">
       <Head>

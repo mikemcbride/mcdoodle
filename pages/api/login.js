@@ -6,7 +6,6 @@ import { scryptSync } from 'crypto'
 const PASSWORD_SALT = process.env.PASSWORD_SALT
 
 export default async function handler(req, res) {
-    console.log('inside login handler', req)
     if (req.method !== 'POST') {
         return {}
     }
@@ -16,9 +15,15 @@ export default async function handler(req, res) {
     let data = await db.select().from(users).where(eq(users.email, req.body.email))
     
     // if password from db doesn't match, they didn't successfully log in. Throw a 401.
-    if (data.length > 0 && data[0].password !== saltedAndHashed) {
+    if (data.length === 0) {
         res.status(401)
-        data = { message: 'unauthorized' }
+        data = { message: 'Invalid credentials.', reason: 'unauthorized' }
+    } else if (data.length > 0 && data[0].password !== saltedAndHashed) {
+        res.status(401)
+        data = { message: 'Invalid credentials.', reason: 'unauthorized' }
+    } else if (data.length > 0 && data[0].isVerified !== true) {
+        res.status(401)
+        data = { message: 'Email address is unverified. Please check your email for a verification link.', reason: 'unverified' }
     } else {
         data = data[0]
         data.apiKey = process.env.API_SECRET

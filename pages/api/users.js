@@ -1,9 +1,13 @@
 import { db } from '../../db/index.js';
 import { users } from '../../db/schema/users';
+import { verifications } from '../../db/schema/verifications';
 import { eq } from 'drizzle-orm';
 import { scryptSync } from 'crypto'
+import { VerifyEmailTemplate } from '../../components/EmailTemplates';
+import { Resend } from 'resend';
 
 const PASSWORD_SALT = process.env.PASSWORD_SALT
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // TODO:
 // allow updating a user. only themselves or admin can do this.
@@ -60,6 +64,25 @@ export default async (req, res) => {
             }
             let response = await db.insert(users).values(data).returning();
             response = response[0]
+
+            // send email verification here
+            let [verificationRecord] = await db.insert(verifications).values({
+                email: response.email,
+                status: 'active'
+            }).returning();
+
+            await resend.emails.send({
+                from: 'McDoodle <mcdoodle+registration@email.mcbrides.us>',
+                to: [response.email],
+                subject: 'McDoodle Account Verification',
+                react: VerifyEmailTemplate({
+                    email: response.email,
+                    firstName: response.firstName,
+                    lastName: response.lastName,
+                    token: verificationRecord.id
+                }),
+            });
+
             return res.status(200).json(response);
         } catch (err) {
             console.error(err);
