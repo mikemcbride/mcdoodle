@@ -8,6 +8,7 @@ export const AuthContext = createContext({
   login: () => { },
   logout: () => { },
   updateUser: () => { },
+  onUserUpdated: () => { },
 })
 
 const Provider = ({ children }) => {
@@ -27,11 +28,18 @@ const Provider = ({ children }) => {
   const updateUser = (val) => {
     localStorage.setItem(LS_USER_KEY, JSON.stringify(val));
     setUser(val);
+    dispatchUserChange(val);
+  }
+
+  const dispatchUserChange = (val) => {
+    const userEvent = new CustomEvent('mcdoodleUserUpdated', { detail: JSON.stringify(val) });
+    window.dispatchEvent(userEvent);
   }
 
   const login = (val) => {
     localStorage.setItem(LS_USER_KEY, JSON.stringify(val));
     setUser(val);
+    dispatchUserChange(val);
     const returnUrl = router.query?.returnUrl || '/'
     router.push(returnUrl)
   }
@@ -39,6 +47,7 @@ const Provider = ({ children }) => {
   const logout = (redirect = true) => {
     localStorage.removeItem(LS_USER_KEY);
     setUser(null);
+    dispatchUserChange(val);
     if (redirect) {
       router.push('/login');
     }

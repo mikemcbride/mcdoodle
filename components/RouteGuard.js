@@ -5,11 +5,20 @@ import { useAuth } from '../context/AuthContext';
 export default function RouteGuard({ children }) {
     const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
-    const { user } = useAuth();
+    let { user } = useAuth();
 
     useEffect(() => {
         // on initial load - run auth check 
         authCheck(router.asPath);
+
+        // previously, user was never getting updated in this component after login.
+        // we now dispatch an event from the AuthContext and listen for it here.
+        // if we hear this event, we update the user. This fixes two issues:
+        // 1. a person logs in and is unable to access protected routes until after a refresh.
+        // 2. a person logs out but is able to hit protected routes anonymously.
+        window.addEventListener('mcdoodleUserUpdated', (e) => {
+            user = JSON.parse(e.detail) || null
+        })
 
         // on route change start - hide page content by setting authorized to false  
         const hideContent = () => setAuthorized(false);

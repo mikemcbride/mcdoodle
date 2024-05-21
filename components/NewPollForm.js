@@ -94,10 +94,10 @@ export default function NewPollForm() {
 
     <SuccessAlert show={showSuccess} />
 
-    <footer className="mt-4 flex justify-end w-full max-w-3xl space-x-4">
+    <footer className="mt-4 flex flex-col-reverse sm:flex-row justify-end w-full max-w-3xl gap-4">
       <Link
         href="/"
-        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        className="inline-flex items-center justify-center px-4 py-3 sm:py-2 text-center border border-gray-300 shadow-sm text-lg sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
       >Cancel</Link>
       <button
         type="button"
@@ -105,7 +105,7 @@ export default function NewPollForm() {
         disabled={isSubmitting}
         className={clsx("w-full sm:w-auto flex sm:inline-flex justify-center items-center px-4 py-3 sm:py-2 border border-transparent text-lg sm:text-sm text-center font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500", isSubmitting && 'bg-opacity-60 cursor-not-allowed')}
       >
-        <Spinner className="text-white h-4 w-4 mr-2" v-if="submitting" /> {isSubmitting ? 'Submitting' : 'Submit'}
+        <Spinner className="text-white h-4 w-4 mr-2" show={isSubmitting} /> {isSubmitting ? 'Submitting' : 'Submit'}
       </button>
     </footer>
   </div>)
