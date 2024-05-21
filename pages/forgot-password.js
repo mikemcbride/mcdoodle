@@ -24,7 +24,7 @@ export default function ForgotPassword() {
     http.post('/forgot-password', { email })
       .then(() => {
         setSubmitting(false)
-        logout();
+        logout(false); // do logout, but don't redirect to /login page.
         setError('');
         setShowSuccess(true);
       })

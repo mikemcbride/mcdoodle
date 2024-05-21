@@ -47,7 +47,7 @@ export default function ResetPassword({ verification }) {
     http.post('/change-password', payload)
       .then(() => {
         setSubmitting(false)
-        logout();
+        logout(false);
         setError('');
         setShowSuccess(true);
       })

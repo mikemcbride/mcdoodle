@@ -36,10 +36,12 @@ const Provider = ({ children }) => {
     router.push(returnUrl)
   }
 
-  const logout = () => {
+  const logout = (redirect = true) => {
     localStorage.removeItem(LS_USER_KEY);
     setUser(null);
-    router.push('/login');
+    if (redirect) {
+      router.push('/login');
+    }
   }
 
   const exposed = {
