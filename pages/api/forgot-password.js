@@ -8,7 +8,6 @@ import { eq } from 'drizzle-orm';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async (req, res) => {
-    console.log('req method:', req.method)
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
@@ -43,6 +42,7 @@ export default async (req, res) => {
     });
 
     if (error) {
+        console.error('An error occurred processing the forgot password request', error);
         return res.status(400).json(error);
     }
 

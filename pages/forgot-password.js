@@ -32,7 +32,7 @@ export default function ForgotPassword() {
       .catch((e) => {
         setSubmitting(false)
         console.error('Error resetting password:', e);
-        setError('Error resetting password');
+        setError('Error resetting password:', e);
       });
   }
   return (
