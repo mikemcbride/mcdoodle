@@ -1,6 +1,16 @@
 import http from './http'
 
 export default class User {
+    static async list() {
+        try {
+            let { data } = await http.get('/users')
+            return data
+        } catch (e) {
+            console.error('unable to fetch users', e)
+            return []
+        }
+    }
+
     static async login(opts) {
         if (!opts.email || !opts.password) {
             return null
@@ -15,7 +25,6 @@ export default class User {
     }
 
     static async update(id, payload) {
-        console.log('payload:', payload)
         try {
             // so we know who is making the request
             const lsUser = JSON.parse(localStorage.getItem('mcdoodle.user'))
