@@ -3,7 +3,11 @@ import { Fragment } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useAuth } from '../context/AuthContext.js'
-import { UserCircleIcon, UserIcon, UsersIcon, KeyIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/20/solid'
+import UserCircleIcon from '@heroicons/react/20/solid/UserCircleIcon.js'
+import UserIcon from '@heroicons/react/20/solid/UserIcon.js'
+import UsersIcon from '@heroicons/react/20/solid/UsersIcon.js'
+import KeyIcon from '@heroicons/react/20/solid/KeyIcon.js'
+import ArrowLeftEndOnRectangleIcon from '@heroicons/react/20/solid/ArrowLeftEndOnRectangleIcon.js'
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -75,7 +79,7 @@ export default function AppMenu() {
                 type="button"
                 className={classNames(active ? 'bg-gray-100' : '', 'px-4 py-2 text-sm text-gray-700 w-full flex items-center gap-4')}
                 onClick={handleSignOut}>
-                <ArrowLeftOnRectangleIcon className="h-4 w-4 text-gray-500" />
+                <ArrowLeftEndOnRectangleIcon className="h-4 w-4 text-gray-500" />
                 <span>Sign out</span>
               </button>
             )}

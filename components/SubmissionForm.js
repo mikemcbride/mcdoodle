@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { XCircleIcon } from '@heroicons/react/24/solid';
+import XCircleIcon from '@heroicons/react/24/solid/XCircleIcon.js';
 import { useState } from 'react';
 
 import Spinner from './Spinner';

@@ -3,7 +3,7 @@ import Link from "next/link";
 import http from '../services/http';
 import { useEffect, useState } from 'react';
 import LoginError from '../components/LoginError.js';
-import { CheckCircleIcon } from '@heroicons/react/20/solid';
+import CheckCircleIcon from '@heroicons/react/20/solid/CheckCircleIcon.js';
 
 export default function VerifyAccount({ verification, email, action }) {
   const [error, setError] = useState('');

@@ -1,4 +1,4 @@
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import CheckCircleIcon from '@heroicons/react/20/solid/CheckCircleIcon.js';
 
 export default function SuccessAlert({ show }) {
   if (!show) return null

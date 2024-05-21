@@ -4,7 +4,7 @@ import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
 import SubmissionForm from '../../components/SubmissionForm';
-import { PencilSquareIcon } from '@heroicons/react/24/solid';
+import PencilSquareIcon from '@heroicons/react/24/solid/PencilSquareIcon.js';
 import { getPolls } from '../api/polls';
 import { getSubmissions } from '../api/submissions';
 import { getQuestions } from '../api/questions';
