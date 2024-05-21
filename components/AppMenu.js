@@ -15,7 +15,6 @@ export default function AppMenu() {
 
   function handleSignOut() {
     logout()
-    router.push('/login')
   }
   return (
     <Menu as="div" className="relative ml-3">
