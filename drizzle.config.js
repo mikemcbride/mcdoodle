@@ -1,5 +1,6 @@
 export default {
   schema: "./db/schema/*",
+  dialect: "sqlite",
   driver: "turso",
   dbCredentials: {
     url: process.env.TURSO_DB_URL,
