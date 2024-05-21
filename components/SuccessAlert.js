@@ -3,7 +3,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/solid';
 export default function SuccessAlert({ show }) {
   if (!show) return null
 
-  return (<div className="my-6 rounded-md bg-emerald-50 p-4" v-if="showSuccess">
+  return (<div className="my-6 rounded-md bg-emerald-50 p-4">
       <div className="flex">
         <div className="flex-shrink-0">
           <CheckCircleIcon

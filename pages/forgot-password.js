@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import LoginError from '../components/LoginError.js';
 import { useAuth } from '../context/AuthContext.js';
+import { CheckCircleIcon } from '@heroicons/react/20/solid';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -76,8 +77,18 @@ export default function ForgotPassword() {
             <LoginError message={error} />
 
             {showSuccess && (
-              <div className="rounded-md bg-emerald-100 p-4">
-                <h3 className="text-sm font-medium text-emerald-800">Success! If you have an account with us, you should see an email with a link to reset your password in a few moments.</h3>
+              <div className="rounded-md bg-green-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-green-800">Request Submitted</h3>
+                    <div className="mt-2 text-sm text-green-700">
+                      <p>If you have an account with us, you should see an email with a link to reset your password momentarily.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </form>
