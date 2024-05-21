@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import LoginError from '../components/LoginError.js';
 import { useAuth } from '../context/AuthContext.js';
-import CheckCircleIcon from '@heroicons/react/20/solid/CheckCircleIcon.js';
+import { CheckCircleIcon } from '@heroicons/react/20/solid';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');

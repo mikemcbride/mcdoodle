@@ -47,7 +47,7 @@ const Provider = ({ children }) => {
   const logout = (redirect = true) => {
     localStorage.removeItem(LS_USER_KEY);
     setUser(null);
-    dispatchUserChange(null);
+    dispatchUserChange(val);
     if (redirect) {
       router.push('/login');
     }

@@ -5,7 +5,7 @@ import http from '../services/http';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LoginError from '../components/LoginError.js';
-import CheckCircleIcon from '@heroicons/react/20/solid/CheckCircleIcon.js';
+import { CheckCircleIcon } from '@heroicons/react/20/solid';
 
 export default function ResetPassword({ verification }) {
   // TODO:

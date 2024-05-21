@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import ChevronLeftIcon from '@heroicons/react/24/solid/ChevronLeftIcon.js'
-import ChevronRightIcon from '@heroicons/react/24/solid/ChevronRightIcon.js'
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid'
 import clsx from 'clsx';
 import getDay from 'date-fns/getDay'
 import addDays from 'date-fns/addDays'
