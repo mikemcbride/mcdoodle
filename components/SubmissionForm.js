@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 import Spinner from './Spinner';
 import DateResponse from './DateResponse';
@@ -10,6 +11,7 @@ import Responses from '../services/responses.js';
 
 const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted, }) => {
   // set up local component data
+  const { user } = useAuth();
   const questions = poll.questions;
   let initialVotes = []
   if (submission === null) {
@@ -32,8 +34,13 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted, }) =>
     })
   }
 
+  // If editing an existing submission, use that name.
+  // If not, check if we have a logged-in user. If so, use their first name.
+  // Otherwise, leave empty.
+  const defaultSubmittedBy = submission === null ? (user ? user.firstName : '') : submission.person;
+
   const [votes, setVotes] = useState(initialVotes)
-  const [submittedBy, setSubmittedBy] = useState(submission === null ? '' : submission.person)
+  const [submittedBy, setSubmittedBy] = useState(defaultSubmittedBy)
   const [submitting, setSubmitting] = useState(false)
   const [showInvalidMessage, setShowInvalidMessage] = useState(false)
   const [validationErrors, setValidationErrors] = useState([])

@@ -29,8 +29,8 @@ export default function VerifyAccount() {
     }
 
     // Fetch verification data
-    http.get(`/api/verifications?id=${token}`)
-      .then((data) => {
+    http.get(`/verifications?id=${token}`)
+      .then(({ data }) => {
         if (data.msg === 'Not found') {
           setError('Not found');
           setSubmitting(false);
@@ -48,7 +48,7 @@ export default function VerifyAccount() {
         setSubmitting(false);
         setLoading(false);
       });
-  }, [token, email]);
+  }, []);
 
   // Process verification when verification data is loaded
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function VerifyAccount() {
       action: action
     }
 
-    http.post('/api/verify-email', payload)
+    http.post('/verify-email', payload)
       .then(() => {
         setSubmitting(false)
         setError('');

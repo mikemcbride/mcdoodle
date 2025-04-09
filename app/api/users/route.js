@@ -84,7 +84,16 @@ export async function POST(request) {
             );
         }
         
-        let response = await db.insert(users).values(data).returning();
+        let response
+        try {
+            response = await db.insert(users).values(data).returning();
+        } catch (err) {
+            console.error('caught error:', err);
+            return NextResponse.json(
+                { msg: 'Email already exists.' },
+                { status: 409 },
+            )
+        }
         if (Array.isArray(response) && response.length === 1) {
             response = response[0];
         }

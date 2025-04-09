@@ -32,8 +32,8 @@ export default function ResetPassword() {
       return;
     }
 
-    http.get(`/api/verifications?id=${token}`)
-      .then((data) => {
+    http.get(`/verifications?id=${token}`)
+      .then(({ data }) => {
         if (data.msg === 'Not found') {
           setError('Not found');
         } else {
@@ -78,7 +78,7 @@ export default function ResetPassword() {
     }
 
     setSubmitting(true)
-    http.post('/api/change-password', payload)
+    http.post('/change-password', payload)
       .then(() => {
         setSubmitting(false)
         logout(false);
