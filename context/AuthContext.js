@@ -1,5 +1,6 @@
+'use client';
 import { createContext, useState, useEffect, useContext } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 const LS_USER_KEY = "mcdoodle.user";
 
