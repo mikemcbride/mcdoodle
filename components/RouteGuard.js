@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,11 +8,13 @@ export default function RouteGuard({ children }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const [authorized, setAuthorized] = useState(false);
-    let { user } = useAuth();
+    const { user } = useAuth();
+    const userRef = useRef(user);
 
     useEffect(() => {
         // on initial load - run auth check 
         const url = [pathname, searchParams].join('?');
+        userRef.current = user; // Keep the ref updated with latest user
         authCheck(url);
 
         // previously, user was never getting updated in this component after login.
@@ -21,10 +23,12 @@ export default function RouteGuard({ children }) {
         // 1. a person logs in and is unable to access protected routes until after a refresh.
         // 2. a person logs out but is able to hit protected routes anonymously.
         window.addEventListener('mcdoodleUserUpdated', (e) => {
-            user = JSON.parse(e.detail) || null
+            userRef.current = JSON.parse(e.detail) || null;
+            // Re-run auth check when user changes via event
+            authCheck(url);
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pathname, searchParams]);
+    }, [pathname, searchParams, user]);
 
     function authCheck(url) {
         // redirect to login page if accessing a private page and not logged in 
@@ -34,13 +38,13 @@ export default function RouteGuard({ children }) {
         const path = url.split('?')[0];
 
         // if user is an admin, allow access to admin paths.
-        if (user?.isAdmin) {
+        if (userRef.current?.isAdmin) {
             setAuthorized(true);
         } else {
             // not an admin
             restrictedPaths.push(...adminPaths);
             // check if logged in
-            if (!user?.id) {
+            if (!userRef.current?.id) {
                 restrictedPaths.push(...privatePaths);
             }
         }

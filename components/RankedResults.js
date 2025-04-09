@@ -77,7 +77,7 @@ export default function RankedResults({ submissions, questions }) {
                   >
                     {!showNos && <EyeIcon aria-hidden="true" className="-ml-0.5 size-4 text-gray-400" />}
                     {showNos && <EyeSlashIcon aria-hidden="true" className="-ml-0.5 size-4 text-gray-400" />}
-                    {showNos ? 'Hide' : 'Show'} Dates with "No" Responses
+                    {showNos ? 'Hide' : 'Show'} Dates with &ldquot;No&rdquot; Responses
                   </button>
                 </div>
               </div>
