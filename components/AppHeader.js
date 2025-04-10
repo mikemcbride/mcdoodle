@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import AppMenu from './AppMenu';
 import { useAuth } from '../context/AuthContext';

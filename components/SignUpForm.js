@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import Users from '../services/users.js';
 import LoginError from './LoginError.js';
 import Link from 'next/link.js';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function SignUpForm() {
   const [firstName, setFirstName] = useState('')
@@ -45,7 +46,7 @@ export default function SignUpForm() {
     }).catch(e => {
       setSubmitting(false);
       console.error("Error registering:", e);
-      setErrorMessage("Error processing registration request.");
+      setErrorMessage(e?.response?.data?.msg || "Error processing registration request.");
     })
   }
 
@@ -58,8 +59,8 @@ export default function SignUpForm() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow rounded-lg sm:px-10">
-          {!showSuccess && (
+        {!showSuccess && (
+          <div className="bg-white py-8 px-4 shadow rounded-lg sm:px-10">
             <form className="space-y-6">
               <div>
                 <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
@@ -168,13 +169,23 @@ export default function SignUpForm() {
 
               <LoginError message={errorMessage} />
             </form>
-          )}
-          {showSuccess && (
-            <div className="rounded-md bg-emerald-100 p-4">
-              <h3 className="text-sm font-medium text-emerald-800">Your account was created! We have sent you an email to verify your account. Please check your email to continue.</h3>
+          </div>
+        )}
+        {showSuccess && (
+          <div className="rounded-md bg-green-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">Success</h3>
+                <div className="mt-2 text-sm text-green-700">
+                  <p>Your account was created! We have sent you an email to verify your account. Please check your email to continue.</p>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

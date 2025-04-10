@@ -1,9 +1,10 @@
-import { Menu, Transition } from '@headlessui/react'
+'use client';
+import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '../context/AuthContext.js'
-import { UserCircleIcon, UserIcon, UsersIcon, KeyIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/20/solid'
+import { UserCircleIcon, UserIcon, UsersIcon, KeyIcon, ArrowLeftStartOnRectangleIcon } from '@heroicons/react/24/solid'
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -19,11 +20,11 @@ export default function AppMenu() {
   return (
     <Menu as="div" className="relative ml-3">
       <div>
-        <Menu.Button className="relative flex text-sm text-white items-center gap-2">
+        <MenuButton className="relative flex text-sm text-white items-center gap-2">
           <span className="sr-only">Open user menu</span>
           <UserCircleIcon className="h-6 w-6" />
           <span className="hidden md:block">{user.firstName}</span>
-        </Menu.Button>
+        </MenuButton>
       </div>
       <Transition
         as={Fragment}
@@ -34,8 +35,8 @@ export default function AppMenu() {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          {user.isAdmin && <Menu.Item>
+        <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+          {user.isAdmin && <MenuItem>
             {({ active }) => (
               <Link
                 href="/admin"
@@ -45,8 +46,8 @@ export default function AppMenu() {
                 <span>Admin</span>
               </Link>
             )}
-          </Menu.Item>}
-          {user.isAdmin && <Menu.Item>
+          </MenuItem>}
+          {user.isAdmin && <MenuItem>
             {({ active }) => (
               <Link
                 href="/users"
@@ -56,8 +57,8 @@ export default function AppMenu() {
                 <span>Manage Users</span>
               </Link>
             )}
-          </Menu.Item>}
-          <Menu.Item>
+          </MenuItem>}
+          <MenuItem>
             {({ active }) => (
               <Link
                 href="/profile"
@@ -67,19 +68,19 @@ export default function AppMenu() {
                 <span>Profile</span>
               </Link>
             )}
-          </Menu.Item>
-          <Menu.Item>
+          </MenuItem>
+          <MenuItem>
             {({ active }) => (
               <button
                 type="button"
                 className={classNames(active ? 'bg-gray-100' : '', 'px-4 py-2 text-sm text-gray-700 w-full flex items-center gap-4')}
                 onClick={handleSignOut}>
-                <ArrowLeftOnRectangleIcon className="h-4 w-4 text-gray-500" />
+                <ArrowLeftStartOnRectangleIcon className="h-4 w-4 text-gray-500" />
                 <span>Sign out</span>
               </button>
             )}
-          </Menu.Item>
-        </Menu.Items>
+          </MenuItem>
+        </MenuItems>
       </Transition>
     </Menu>
   )

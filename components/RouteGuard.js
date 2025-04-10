@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export default function RouteGuard({ children }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [authorized, setAuthorized] = useState(false);
-    let { user } = useAuth();
+    const { user } = useAuth();
+    const userRef = useRef(user);
 
     useEffect(() => {
         // on initial load - run auth check 
-        authCheck(router.asPath);
+        const url = [pathname, searchParams].join('?');
+        userRef.current = user; // Keep the ref updated with latest user
+        authCheck(url);
 
         // previously, user was never getting updated in this component after login.
         // we now dispatch an event from the AuthContext and listen for it here.
@@ -17,41 +23,34 @@ export default function RouteGuard({ children }) {
         // 1. a person logs in and is unable to access protected routes until after a refresh.
         // 2. a person logs out but is able to hit protected routes anonymously.
         window.addEventListener('mcdoodleUserUpdated', (e) => {
-            user = JSON.parse(e.detail) || null
+            userRef.current = JSON.parse(e.detail) || null;
+            // Re-run auth check when user changes via event
+            authCheck(url);
         })
-
-        // on route change start - hide page content by setting authorized to false  
-        const hideContent = () => setAuthorized(false);
-        router.events.on('routeChangeStart', hideContent);
-
-        // on route change complete - run auth check 
-        router.events.on('routeChangeComplete', authCheck)
-
-        // unsubscribe from events in useEffect return function
-        return () => {
-            router.events.off('routeChangeStart', hideContent);
-            router.events.off('routeChangeComplete', authCheck);
-        }
-
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [pathname, searchParams, user]);
 
     function authCheck(url) {
         // redirect to login page if accessing a private page and not logged in 
+        const restrictedPaths = []
         const privatePaths = ['/settings', '/new-poll'];
         const adminPaths = ['/admin', '/users'];
         const path = url.split('?')[0];
-        const LS_USER_ID = user?.id
+
         // if user is an admin, allow access to admin paths.
-        if (user?.isAdmin) {
-            privatePaths.push(...adminPaths);
+        if (userRef.current?.isAdmin) {
+            setAuthorized(true);
+        } else {
+            // not an admin
+            restrictedPaths.push(...adminPaths);
+            // check if logged in
+            if (!userRef.current?.id) {
+                restrictedPaths.push(...privatePaths);
+            }
         }
-        if (privatePaths.includes(path) && !LS_USER_ID) {
+        if (restrictedPaths.includes(path)) {
             setAuthorized(false);
-            router.push({
-                pathname: '/login',
-                query: { returnUrl: router.asPath } // handle returnUrl in login form
-            });
+            router.replace(`/login?returnUrl=${url}`);
         } else {
             setAuthorized(true);
         }

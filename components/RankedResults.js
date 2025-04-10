@@ -1,7 +1,10 @@
-import clsx from 'clsx';
+import { useState } from 'react';
 import _orderBy from 'lodash/orderBy'
+import RankedResult from './RankedResult.js';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function RankedResults({ submissions, questions }) {
+  const [showNos, setShowNos] = useState(false);
   const questionMap = new Map()
   const questionValues = {}
   for (let q of questions) {
@@ -43,53 +46,43 @@ export default function RankedResults({ submissions, questions }) {
     ['desc', 'desc']
   )
 
+  const [yesResponses, noResponses] = sortedResponses.reduce(([yes, no], row) => {
+    if (row.no > 0) {
+      no.push(row)
+    } else {
+      yes.push(row)
+    }
+    return [yes, no]
+  }, [[], []])
+
+  function toggleShowNos() {
+    setShowNos(!showNos)
+  }
+
   return (
     <>
       <h3 className="mt-8 mb-4 text-2xl font-bold">Suggested Dates</h3>
       <div className="-my-2 -mx-4 sm:-mx-6 lg:-mx-8">
-        <div className="py-2 md:px-6 lg:px-8">
-          <section className="shadow ring-1 ring-black ring-opacity-5 md:rounded-lg divide-y divide-gray-200 bg-white">
-            {sortedResponses.map(row => {
-              return (
-                <div
-                  key={row.date}
-                  className="p-4 md:py-6 lg:py-8 lg:px-6 flex items-center"
-                >
-                  <div className="font-bold text-sm md:text-base flex-shrink-0 text-right pr-4 md:pr-6 lg:pr-8">
-                    {row.date}
-                  </div>
-                  <div className="flex h-3 md:h-6 flex-shrink rounded w-full">
-                    {row.yes > 0 && (
-                      <div
-                        className={clsx("group relative bg-emerald-500", row.yes > 0 ? 'rounded-l' : '', row.yes === row.total ? 'rounded-r' : '')}
-                        style={{width: `${(row.yes / row.total) * 100}%`}}
-                      >
-                        <span className="hidden group-hover:block px-2 py-1 rounded text-xs bg-gray-700 bg-opacity-90 text-white font-medium absolute -top-8 left-1/2 transform -translate-x-1/2">{row.yes}</span>
-                      </div>
-                    )}
-
-                    {row.if_needed > 0 && (
-                      <div
-                        className={clsx("group relative bg-yellow-400", row.yes === 0 ? 'rounded-l' : '', row.no === 0 ? 'rounded-r' : '')}
-                        style={{width: `${(row.if_needed / row.total) * 100}%`}}
-                      >
-                        <span className="hidden group-hover:block px-2 py-1 rounded text-xs bg-gray-700 bg-opacity-90 text-white font-medium absolute -top-8 left-1/2 transform -translate-x-1/2">{row.if_needed}</span>
-                      </div>
-
-                    )}
-
-                    {row.no > 0 && (
-                      <div
-                        className={clsx("group relative bg-red-500", row.no > 0 ? 'rounded-r' : '', row.no === row.total ? 'rounded-l' : '')}
-                        style={{width: `${(row.no / row.total) * 100}%`}}
-                      >
-                        <span className="hidden group-hover:block px-2 py-1 rounded text-xs bg-gray-700 bg-opacity-90 text-white font-medium absolute -top-8 left-1/2 transform -translate-x-1/2">{row.no}</span>
-                      </div>
-                    )}
-                  </div>
+        <div className="pt-2 pb-6 md:px-6 lg:px-8">
+          <section className="shadow ring-1 ring-black ring-opacity-5 md:rounded-lg divide-y divide-gray-200 bg-white relative">
+            {yesResponses.map(row => <RankedResult row={row} key={row.date} />)}
+            <div className="relative -mb-px">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-full absolute" />
+                <div className="relative flex justify-center">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-x-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                    onClick={() => toggleShowNos()}
+                  >
+                    {!showNos && <EyeIcon aria-hidden="true" className="-ml-0.5 size-4 text-gray-400" />}
+                    {showNos && <EyeSlashIcon aria-hidden="true" className="-ml-0.5 size-4 text-gray-400" />}
+                    {showNos ? 'Hide' : 'Show'} Dates with &quot;No&quot; Responses
+                  </button>
                 </div>
-              )
-            })}
+              </div>
+            </div>
+            {showNos && noResponses.map(row => <RankedResult row={row} key={row.date} />)}
           </section>
         </div>
       </div>
