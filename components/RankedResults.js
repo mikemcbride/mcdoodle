@@ -66,9 +66,9 @@ export default function RankedResults({ submissions, questions }) {
         <div className="pt-2 pb-6 md:px-6 lg:px-8">
           <section className="shadow ring-1 ring-black ring-opacity-5 md:rounded-lg divide-y divide-gray-200 bg-white relative">
             {yesResponses.map(row => <RankedResult row={row} key={row.date} />)}
-            <div className="relative">
+            <div className="relative -mb-px">
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full border-t border-gray-200 absolute" />
+                <div className="w-full absolute" />
                 <div className="relative flex justify-center">
                   <button
                     type="button"
@@ -77,7 +77,7 @@ export default function RankedResults({ submissions, questions }) {
                   >
                     {!showNos && <EyeIcon aria-hidden="true" className="-ml-0.5 size-4 text-gray-400" />}
                     {showNos && <EyeSlashIcon aria-hidden="true" className="-ml-0.5 size-4 text-gray-400" />}
-                    {showNos ? 'Hide' : 'Show'} Dates with &ldquot;No&rdquot; Responses
+                    {showNos ? 'Hide' : 'Show'} Dates with &quot;No&quot; Responses
                   </button>
                 </div>
               </div>

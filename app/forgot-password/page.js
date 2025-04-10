@@ -8,12 +8,12 @@ import { useAuth } from '../../context/AuthContext.js';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function ForgotPassword() {
-  const [email, setEmail] = useState('');
+  const { user, logout } = useAuth();
+  const [email, setEmail] = useState(user?.email || '');
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false)
 
-  const { logout } = useAuth();
 
   function handleSubmit() {
     if (submitting) return;
