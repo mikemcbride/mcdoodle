@@ -7,11 +7,15 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate:sqlite",
-    "db:migrate": "ts-node ./db/migrate.js"
+    "db:migrate": "ts-node ./db/migrate.js",
+    "preview": "opennextjs-cloudflare && wrangler dev",
+    "deploy": "opennextjs-cloudflare && wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "devDependencies": {
     "@headlessui/react": "^2.0.0",
     "@heroicons/react": "^2.0.13",
+    "@opennextjs/cloudflare": "^1.0.0-beta.2",
     "@tailwindcss/forms": "^0.5.3",
     "autoprefixer": "^10.4.2",
     "date-fns": "^2.29.3",
@@ -21,7 +25,8 @@
     "lodash": "^4.17.21",
     "postcss": "^8.4.5",
     "tailwindcss": "^3.0.15",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "wrangler": "^4.10.0"
   },
   "dependencies": {
     "@libsql/client": "^0.15.2",
