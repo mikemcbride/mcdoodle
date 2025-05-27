@@ -12,12 +12,14 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as VerifyAccountImport } from './routes/verify-account'
+import { Route as TestImport } from './routes/test'
 import { Route as SignUpImport } from './routes/sign-up'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as ProfileImport } from './routes/profile'
 import { Route as NewPollImport } from './routes/new-poll'
 import { Route as LoginImport } from './routes/login'
 import { Route as ForgotPasswordImport } from './routes/forgot-password'
+import { Route as DavidImport } from './routes/david'
 import { Route as AuthImport } from './routes/_auth'
 import { Route as IndexImport } from './routes/index'
 import { Route as PollsIdImport } from './routes/polls/$id'
@@ -29,6 +31,12 @@ import { Route as AuthAdminImport } from './routes/_auth.admin'
 const VerifyAccountRoute = VerifyAccountImport.update({
   id: '/verify-account',
   path: '/verify-account',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TestRoute = TestImport.update({
+  id: '/test',
+  path: '/test',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -65,6 +73,12 @@ const LoginRoute = LoginImport.update({
 const ForgotPasswordRoute = ForgotPasswordImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DavidRoute = DavidImport.update({
+  id: '/david',
+  path: '/david',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -115,6 +129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
+    '/david': {
+      id: '/david'
+      path: '/david'
+      fullPath: '/david'
+      preLoaderRoute: typeof DavidImport
+      parentRoute: typeof rootRoute
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
@@ -155,6 +176,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpImport
+      parentRoute: typeof rootRoute
+    }
+    '/test': {
+      id: '/test'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof TestImport
       parentRoute: typeof rootRoute
     }
     '/verify-account': {
@@ -205,12 +233,14 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof AuthRouteWithChildren
+  '/david': typeof DavidRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/new-poll': typeof NewPollRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-up': typeof SignUpRoute
+  '/test': typeof TestRoute
   '/verify-account': typeof VerifyAccountRoute
   '/admin': typeof AuthAdminRoute
   '/users': typeof AuthUsersRoute
@@ -220,12 +250,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof AuthRouteWithChildren
+  '/david': typeof DavidRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/new-poll': typeof NewPollRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-up': typeof SignUpRoute
+  '/test': typeof TestRoute
   '/verify-account': typeof VerifyAccountRoute
   '/admin': typeof AuthAdminRoute
   '/users': typeof AuthUsersRoute
@@ -236,12 +268,14 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
+  '/david': typeof DavidRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/new-poll': typeof NewPollRoute
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-up': typeof SignUpRoute
+  '/test': typeof TestRoute
   '/verify-account': typeof VerifyAccountRoute
   '/_auth/admin': typeof AuthAdminRoute
   '/_auth/users': typeof AuthUsersRoute
@@ -253,12 +287,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
+    | '/david'
     | '/forgot-password'
     | '/login'
     | '/new-poll'
     | '/profile'
     | '/reset-password'
     | '/sign-up'
+    | '/test'
     | '/verify-account'
     | '/admin'
     | '/users'
@@ -267,12 +303,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | ''
+    | '/david'
     | '/forgot-password'
     | '/login'
     | '/new-poll'
     | '/profile'
     | '/reset-password'
     | '/sign-up'
+    | '/test'
     | '/verify-account'
     | '/admin'
     | '/users'
@@ -281,12 +319,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/david'
     | '/forgot-password'
     | '/login'
     | '/new-poll'
     | '/profile'
     | '/reset-password'
     | '/sign-up'
+    | '/test'
     | '/verify-account'
     | '/_auth/admin'
     | '/_auth/users'
@@ -297,12 +337,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  DavidRoute: typeof DavidRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   NewPollRoute: typeof NewPollRoute
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignUpRoute: typeof SignUpRoute
+  TestRoute: typeof TestRoute
   VerifyAccountRoute: typeof VerifyAccountRoute
   PollsIdRoute: typeof PollsIdRoute
 }
@@ -310,12 +352,14 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  DavidRoute: DavidRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   NewPollRoute: NewPollRoute,
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignUpRoute: SignUpRoute,
+  TestRoute: TestRoute,
   VerifyAccountRoute: VerifyAccountRoute,
   PollsIdRoute: PollsIdRoute,
 }
@@ -332,12 +376,14 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_auth",
+        "/david",
         "/forgot-password",
         "/login",
         "/new-poll",
         "/profile",
         "/reset-password",
         "/sign-up",
+        "/test",
         "/verify-account",
         "/polls/$id"
       ]
@@ -351,6 +397,9 @@ export const routeTree = rootRoute
         "/_auth/admin",
         "/_auth/users"
       ]
+    },
+    "/david": {
+      "filePath": "david.tsx"
     },
     "/forgot-password": {
       "filePath": "forgot-password.tsx"
@@ -369,6 +418,9 @@ export const routeTree = rootRoute
     },
     "/sign-up": {
       "filePath": "sign-up.tsx"
+    },
+    "/test": {
+      "filePath": "test.tsx"
     },
     "/verify-account": {
       "filePath": "verify-account.tsx"
