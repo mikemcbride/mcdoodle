@@ -1,113 +1,98 @@
-interface Env {
-  // Add environment variables if needed
-}
+import { Hono } from 'hono';
+import { handleLogin } from './api/login/route.js';
+import { handlePolls } from './api/polls/route.js';
+import { handleQuestions } from './api/questions/route.js';
+import { handleResponses } from './api/responses/route.js';
+import { handleSubmissions } from './api/submissions/route.js';
+import { handleUsers } from './api/users/route.js';
+import { handleVerifications } from './api/verifications/route.js';
+import { handleForgotPassword } from './api/forgot-password/route.js';
+import { handleChangePassword } from './api/change-password/route.js';
+import { handleVerifyEmail } from './api/verify-email/route.js';
+import type { Env } from './types';
 
-// Mock user data for demonstration
-const mockUsers = [
-  { id: '1', email: 'admin@example.com', password: 'password', name: 'Admin User', isAdmin: true },
-  { id: '2', email: 'user@example.com', password: 'password', name: 'Regular User', isAdmin: false },
-];
+const app = new Hono<{ Bindings: Env }>();
 
-// Define the shape of login request data
-interface LoginRequest {
-  email: string;
-  password: string;
-}
+// API routes
+app.post('/api/login', async (c) => {
+	return handleLogin(c, c.env);
+});
 
-export default {
-  async fetch(request: Request, env: Env) {
-    const url = new URL(request.url);
-    console.log('env:', env);
-    
-    // Handle API routes
-    if (url.pathname.startsWith('/api/')) {
-      // Handle authentication
-      if (url.pathname === '/api/auth/login') {
-        if (request.method !== 'POST') {
-          return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
-            status: 405,
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-        }
+app.get('/api/polls', async (c) => {
+	return handlePolls(c, c.env);
+});
 
-        try {
-          const data = await request.json() as LoginRequest;
-          const { email, password } = data;
-          
-          // Find user
-          const user = mockUsers.find(u => u.email === email);
-          
-          if (!user || user.password !== password) {
-            return new Response(JSON.stringify({ error: 'Invalid credentials' }), { 
-              status: 401,
-              headers: {
-                'Content-Type': 'application/json',
-              }
-            });
-          }
-          
-          // Return user without password
-          const { password: _, ...userWithoutPassword } = user;
-          
-          return new Response(JSON.stringify(userWithoutPassword), {
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-        } catch (err) {
-          return new Response(JSON.stringify({ error: 'Invalid request' }), { 
-            status: 400,
-            headers: {
-              'Content-Type': 'application/json',
-            }
-          });
-        }
-      }
-      
-      // Handle user verification
-      if (url.pathname === '/api/auth/me') {
-        // In a real app, this would validate a token from the authorization header
-        // For demonstration, we'll simply return a mock response
-        return new Response(JSON.stringify({ 
-          authenticated: true,
-          message: 'This endpoint would verify user token in a real app' 
-        }), {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-      
-      // Handle polls API
-      if (url.pathname.startsWith('/api/polls')) {
-        return new Response(JSON.stringify({ 
-          message: 'Polls API not yet implemented' 
-        }), {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-      
-      // Default API response for unknown routes
-      return new Response(JSON.stringify({ 
-        error: 'API endpoint not found',
-        availableEndpoints: [
-          '/api/auth/login',
-          '/api/auth/me',
-          '/api/polls'
-        ]
-      }), { 
-        status: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-    }
-    
-    // Any non-API routes should be handled by the vite client-side app
-    return new Response(null, { status: 404 });
-  },
-} satisfies ExportedHandler<Env>;
+app.post('/api/polls', async (c) => {
+	return handlePolls(c, c.env);
+});
+
+app.delete('/api/polls', async (c) => {
+	return handlePolls(c, c.env);
+});
+
+app.get('/api/questions', async (c) => {
+	return handleQuestions(c, c.env);
+});
+
+app.post('/api/questions', async (c) => {
+	return handleQuestions(c, c.env);
+});
+
+app.get('/api/responses', async (c) => {
+	return handleResponses(c, c.env);
+});
+
+app.post('/api/responses', async (c) => {
+	return handleResponses(c, c.env);
+});
+
+app.put('/api/responses', async (c) => {
+	return handleResponses(c, c.env);
+});
+
+app.get('/api/submissions', async (c) => {
+	return handleSubmissions(c, c.env);
+});
+
+app.post('/api/submissions', async (c) => {
+	return handleSubmissions(c, c.env);
+});
+
+app.put('/api/submissions', async (c) => {
+	return handleSubmissions(c, c.env);
+});
+
+app.get('/api/users', async (c) => {
+	return handleUsers(c, c.env);
+});
+
+app.post('/api/users', async (c) => {
+	return handleUsers(c, c.env);
+});
+
+app.put('/api/users', async (c) => {
+	return handleUsers(c, c.env);
+});
+
+app.get('/api/verifications', async (c) => {
+	return handleVerifications(c, c.env);
+});
+
+app.post('/api/forgot-password', async (c) => {
+	return handleForgotPassword(c, c.env);
+});
+
+app.post('/api/change-password', async (c) => {
+	return handleChangePassword(c, c.env);
+});
+
+app.post('/api/verify-email', async (c) => {
+	return handleVerifyEmail(c, c.env);
+});
+
+// Serve static assets for all non-API routes
+app.all('*', async (c) => {
+	return c.env.ASSETS.fetch(c.req.raw);
+});
+
+export default app;

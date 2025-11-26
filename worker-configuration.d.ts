@@ -2,4 +2,9 @@
 // After adding bindings to `wrangler.jsonc`, regenerate this interface via `npm run cf-typegen`
 interface Env {
 	ASSETS: Fetcher;
+	DB: D1Database;
+	PASSWORD_SALT: string;
+	API_SECRET: string;
+	RESEND_API_KEY: string;
+	BASE_URL?: string;
 }

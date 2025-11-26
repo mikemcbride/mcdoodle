@@ -12,4 +12,16 @@ export default defineConfig({
     cloudflare(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      external: (id) => {
+        // Don't bundle node:crypto - it's available in Cloudflare Workers
+        if (id === 'node:crypto') return true;
+        return false;
+      },
+    },
+    commonjsOptions: {
+      include: [/db/, /node_modules/],
+    },
+  },
 })

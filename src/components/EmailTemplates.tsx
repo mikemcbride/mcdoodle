@@ -12,7 +12,8 @@ import {
 // TODO: this will send a verification email to the user.
 // the page we send them to will POST to our API to update the user to be verified.
 // we should prevent login until the user is verified.
-export const VerifyEmailTemplate = ({ email, firstName, token }: { email: string, firstName: string, token: string }) => {
+export const VerifyEmailTemplate = ({ email, firstName, token, baseUrl }: { email: string, firstName: string, token: string, baseUrl?: string }) => {
+  const base = baseUrl || 'http://localhost:5173';
   return (
     <Html>
       <Head />
@@ -24,13 +25,13 @@ export const VerifyEmailTemplate = ({ email, firstName, token }: { email: string
             <Text style={styles.text}>
               Thanks for registering. We need to verify your email account before we can let you log in (you understand, right?). Click the link below and you&apos;ll be on your way!
             </Text>
-            <Button style={styles.button} href={`${process.env.NEXT_PUBLIC_BASE_URL}/verify-account?token=${token}&action=verify&email=${email}`}>
+            <Button style={styles.button} href={`${base}/verify-account?token=${token}&action=verify&email=${email}`}>
               Verify Account
             </Button>
             <Text style={styles.text}>
               If you did not register for an account, please click &quot;Reject&quot; below to prevent your email being used for this account registration.
             </Text>
-            <Button style={styles.button} href={`${process.env.NEXT_PUBLIC_BASE_URL}/verify-account?token=${token}&email=${email}&action=reject`}>
+            <Button style={styles.button} href={`${base}/verify-account?token=${token}&email=${email}&action=reject`}>
               Reject Request
             </Button>
             <Text style={styles.text}>
@@ -48,7 +49,9 @@ export const VerifyEmailTemplate = ({ email, firstName, token }: { email: string
 export const ForgotPasswordTemplate = ({
   token,
   user,
-}: { token: string, user: { firstName: string }}) => {
+  baseUrl,
+}: { token: string, user: { firstName: string }, baseUrl?: string }) => {
+  const base = baseUrl || 'http://localhost:5173';
   return (
     <Html>
       <Head />
@@ -61,7 +64,7 @@ export const ForgotPasswordTemplate = ({
               Someone recently requested a password change for your McDoodle
               account. If this was you, you can set a new password here:
             </Text>
-            <Button style={styles.button} href={`${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${token}`}>
+            <Button style={styles.button} href={`${base}/reset-password?token=${token}`}>
               Reset password
             </Button>
             <Text style={styles.text}>
