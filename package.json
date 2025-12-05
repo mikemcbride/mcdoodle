@@ -4,16 +4,20 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "wrangler dev",
+		"dev:vite": "vite",
 		"build": "tsc -b && vite build",
 		"lint": "eslint .",
 		"preview": "pnpm run build && vite preview",
 		"deploy": "pnpm run build && wrangler deploy",
-		"cf-typegen": "wrangler types"
+		"cf-typegen": "wrangler types",
+		"db:migrate": "node db/migrate.js local",
+		"db:migrate:remote": "node db/migrate.js remote"
 	},
 	"dependencies": {
 		"@headlessui/react": "^2.2.2",
 		"@heroicons/react": "^2.2.0",
+		"@noble/hashes": "^2.0.1",
 		"@paralleldrive/cuid2": "^2.2.2",
 		"@react-email/components": "^0.0.38",
 		"@tailwindcss/forms": "^0.5.10",

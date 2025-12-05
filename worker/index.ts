@@ -92,6 +92,10 @@ app.post('/api/verify-email', async (c) => {
 
 // Serve static assets for all non-API routes
 app.all('*', async (c) => {
+	// Check if ASSETS binding is available (may not be in all environments)
+	if (!c.env.ASSETS) {
+		return c.text('Assets not configured', 500);
+	}
 	return c.env.ASSETS.fetch(c.req.raw);
 });
 

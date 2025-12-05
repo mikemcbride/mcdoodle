@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../auth";
 import LoginForm from "../components/LoginForm.tsx";
 import { AuthUser } from "../types";
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const { login, logout } = useAuth();
+  const navigate = useNavigate();
   let { returnUrl } = Route.useSearch();
   if (!returnUrl) {
     returnUrl = "/";
@@ -24,10 +25,10 @@ function Login() {
   function handleLogin(val: AuthUser | null) {
     if (val === null) {
       logout();
-      redirect({ to: "/login" });
+      navigate({ to: "/login" });
     } else {
       login(val);
-      redirect({ to: returnUrl });
+      navigate({ to: returnUrl });
     }
   }
 

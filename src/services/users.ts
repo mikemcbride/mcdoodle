@@ -44,7 +44,7 @@ export default class User {
         }
     }
 
-    static async register(payload: User) {
+    static async register(payload: { firstName: string; lastName: string; email: string; password: string }) {
         try {
             const { data } = await http.post('/users', payload)
             return data

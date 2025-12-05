@@ -80,7 +80,7 @@ export default function RankedResults({ submissions, questions }: { submissions:
       <h3 className="mt-8 mb-4 text-2xl font-bold">Suggested Dates</h3>
       <div className="-my-2 -mx-4 sm:-mx-6 lg:-mx-8">
         <div className="pt-2 pb-6 md:px-6 lg:px-8">
-          <section className="shadow ring-1 ring-black ring-opacity-5 md:rounded-lg divide-y divide-gray-200 bg-white relative">
+          <section className="shadow ring-1 ring-black/5 md:rounded-lg divide-y divide-gray-200 bg-white relative">
             {yesResponses.map(row => <RankedResult row={row} key={row.date} />)}
             <div className="relative -mb-px">
               <div className="absolute inset-0 flex items-center justify-center">

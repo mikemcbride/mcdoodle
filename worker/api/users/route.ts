@@ -2,10 +2,24 @@ import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
-// @ts-expect-error - node:crypto is available in Cloudflare Workers
-import { scryptSync } from 'node:crypto';
+import { scrypt } from '@noble/hashes/scrypt.js';
 import type { HandlerContext, Env } from '../../types.js';
 import { Resend } from 'resend';
+
+// Helper function to match scryptSync API from node:crypto
+// Returns hex string directly (Cloudflare Workers compatible)
+function scryptSync(password: string, salt: string, keylen: number): { toString(encoding: 'hex'): string } {
+    // scrypt parameters: N=16384, r=8, p=1 are common defaults
+    // These match Node.js scryptSync defaults
+    const result = scrypt(password, salt, { N: 16384, r: 8, p: 1, dkLen: keylen });
+    // Convert Uint8Array to hex string
+    const hex = Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('');
+    return {
+        toString(_encoding: 'hex'): string {
+            return hex;
+        }
+    };
+}
 
 function saltAndHashPassword(password: string, salt: string) {
     return scryptSync(password, salt, 64).toString('hex');

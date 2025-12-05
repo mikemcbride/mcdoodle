@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import Users from '../services/users.js';
-import LoginError from './LoginError.js';
+import User from '../services/users';
+import LoginError from './LoginError';
 import { Link } from '@tanstack/react-router';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
@@ -35,7 +35,7 @@ export default function SignUpForm() {
       return;
     }
     setSubmitting(true)
-    Users.register({ firstName, lastName, email, password }).then(user => {
+    User.register({ firstName, lastName, email, password }).then(user => {
       setSubmitting(false)
       if (user) {
         setShowSuccess(true)

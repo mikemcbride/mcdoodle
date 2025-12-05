@@ -4,6 +4,7 @@
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-05-06",
 	"assets": {
+		"binding": "ASSETS",
 		"not_found_handling": "single-page-application"
 	},
 	"observability": {
@@ -19,7 +20,8 @@
 		{
 			"binding": "DB",
 			"database_name": "mcdoodle",
-			"database_id": "863809a1-32e0-4f7a-bac2-0edd2a9508a1"
+			"database_id": "863809a1-32e0-4f7a-bac2-0edd2a9508a1",
+			"migrations_dir": "db/migrations"
 		}
 	]
 }
