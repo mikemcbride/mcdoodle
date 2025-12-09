@@ -82,11 +82,35 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
             }
             
             console.log(`Inserting ${valuesToInsert.length} questions`);
-            let response: any = await db.insert(questions).values(valuesToInsert).returning();
-            console.log(`Successfully inserted ${Array.isArray(response) ? response.length : 1} questions`);
+            
+            // SQLite/D1 has a limit on the number of variables in a single statement
+            // Batch inserts to avoid "too many variables" error
+            // Using batches of 25 to be conservative (D1 may have stricter limits than standard SQLite)
+            // Each row has 3 fields (value, poll_id, order), so 30 rows = 90 variables
+            const BATCH_SIZE = 25;
+            const allResults: any[] = [];
+            
+            for (let i = 0; i < valuesToInsert.length; i += BATCH_SIZE) {
+                const batch = valuesToInsert.slice(i, i + BATCH_SIZE);
+                const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+                console.log(`Inserting batch ${batchNumber} (${batch.length} questions, indices ${i} to ${i + batch.length - 1})`);
+                
+                try {
+                    const batchResponse: any = await db.insert(questions).values(batch).returning();
+                    const batchResults = Array.isArray(batchResponse) ? batchResponse : [batchResponse];
+                    allResults.push(...batchResults);
+                    console.log(`Batch ${batchNumber} inserted successfully`);
+                } catch (batchError) {
+                    console.error(`Error inserting batch ${batchNumber}:`, batchError);
+                    const batchErrorMessage = batchError instanceof Error ? batchError.message : String(batchError);
+                    throw new Error(`Failed to insert batch ${batchNumber}: ${batchErrorMessage}`);
+                }
+            }
+            
+            console.log(`Successfully inserted ${allResults.length} questions`);
             
             // if we only inserted one row, we don't need to return an array.
-            const result = Array.isArray(response) && response.length === 1 && !isArray ? response[0] : response;
+            const result = allResults.length === 1 && !isArray ? allResults[0] : allResults;
             
             return c.json(result, 200);
         } catch (err) {
