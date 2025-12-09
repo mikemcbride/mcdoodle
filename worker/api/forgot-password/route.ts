@@ -32,7 +32,11 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
 
     // 4. Send an email with a URL that includes the token (we'll verify on the page they land on in the UI)
     const resend = new Resend(env.RESEND_API_KEY);
-    const baseUrl = env.BASE_URL || 'http://localhost:5173';
+    // Get base URL from env or derive from request
+    const baseUrl = env.BASE_URL || (() => {
+        const url = new URL(c.req.url);
+        return `${url.protocol}//${url.host}`;
+    })();
 
     // Import email template dynamically - using @ts-expect-error because we're importing React components in a worker
     // @ts-expect-error - importing React components in worker

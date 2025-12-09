@@ -34,10 +34,16 @@ export async function handleLogin(c: HandlerContext, env: Env) {
 
         const PASSWORD_SALT = env.PASSWORD_SALT;
         if (!PASSWORD_SALT) {
+            console.error('PASSWORD_SALT is not configured');
             return c.json({ error: 'Server configuration error' }, 500);
         }
 
         const db = getDb(env.DB);
+        if (!db) {
+            console.error('Database connection is not available');
+            return c.json({ error: 'Server configuration error' }, 500);
+        }
+
         const saltedAndHashed = scryptSync(password, PASSWORD_SALT, 64).toString('hex');
         const data = await db.select().from(users).where(eq(users.email, email));
         
@@ -66,6 +72,9 @@ export async function handleLogin(c: HandlerContext, env: Env) {
         return c.json(responseData, status as 200 | 401);
     } catch (err) {
         console.error('Login error:', err);
-        return c.json({ error: 'Invalid request' }, 400);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        const errorStack = err instanceof Error ? err.stack : undefined;
+        console.error('Login error details:', { errorMessage, errorStack });
+        return c.json({ error: 'Invalid request', details: errorMessage }, 400);
     }
 }

@@ -130,7 +130,11 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             }).returning();
 
             const resend = new Resend(env.RESEND_API_KEY);
-            const baseUrl = env.BASE_URL || 'http://localhost:5173';
+            // Get base URL from env or derive from request
+            const baseUrl = env.BASE_URL || (() => {
+                const url = new URL(c.req.url);
+                return `${url.protocol}//${url.host}`;
+            })();
 
             // Import email template dynamically - using @ts-ignore because we're importing React components in a worker
             // @ts-expect-error - importing React components in worker
