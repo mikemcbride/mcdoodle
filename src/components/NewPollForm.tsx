@@ -11,7 +11,7 @@ import SuccessAlert from './SuccessAlert.js'
 export default function NewPollForm() {
   const router = useRouter()
 
-  const [selected, setSelected] = useState([])
+  const [selected, setSelected] = useState<string[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
@@ -38,15 +38,33 @@ export default function NewPollForm() {
         setIsSubmitting(false);
         return;
       }
-      Questions.create(selected.map((val, idx) => ({
+      // Sort selected dates to ensure proper ordering (important when dates span multiple months)
+      // Filter out any invalid dates and ensure they're valid ISO date strings
+      const sortedSelected = [...selected]
+        .filter(val => val && typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/))
+        .sort();
+      
+      if (sortedSelected.length === 0) {
+        console.error('No valid dates selected');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const questionsToCreate = sortedSelected.map((val, idx) => ({
         value: val,
         poll_id: newPoll.id,
         order: idx
-      }))).then(() => {
+      }));
+      
+      console.log('Creating questions:', questionsToCreate.length, 'questions for poll:', newPoll.id);
+      
+      Questions.create(questionsToCreate).then(() => {
         setIsSubmitting(false)
         flashSuccess()
       }).catch((error) => {
         console.error('Error creating questions:', error);
+        console.error('Error response:', error?.response?.data || error?.response || error?.message || error);
+        console.error('Questions that failed:', questionsToCreate);
         setIsSubmitting(false);
         // Could show error message to user here
       })
