@@ -12,7 +12,7 @@
 	},
 	"routes": [
 		{
-			"pattern": "doodle.dev.mcbrides.us",
+			"pattern": "doodle.mcbrides.us",
 			"custom_domain": true
 		}
 	],
