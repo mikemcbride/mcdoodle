@@ -92,9 +92,9 @@ export async function handleResponses(c: HandlerContext, env: Env) {
             
             // SQLite/D1 has a limit on the number of variables in a single statement
             // Batch inserts to avoid "too many variables" error
-            // Using batches of 25 to be conservative (D1 may have stricter limits than standard SQLite)
-            // Each row has 4 fields (value, question_id, submission_id, poll_id), so 25 rows = 100 variables
-            const BATCH_SIZE = 25;
+            // Using batches of 15 to be very conservative (D1 may have stricter limits than standard SQLite)
+            // Each row has 4 fields (value, question_id, submission_id, poll_id), so 15 rows = 60 variables
+            const BATCH_SIZE = 15;
             const allResults: any[] = [];
             
             for (let i = 0; i < valuesToInsert.length; i += BATCH_SIZE) {
