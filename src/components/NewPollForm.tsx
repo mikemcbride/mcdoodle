@@ -33,7 +33,6 @@ export default function NewPollForm() {
       description: description || '', // Ensure description is not null
       status: 'open', // new polls will default to being open
     }).then(newPoll => {
-      console.log('new poll:', newPoll)
       if (!newPoll || !newPoll.id) {
         console.error('Failed to create poll or get poll ID');
         setIsSubmitting(false);
