@@ -22,13 +22,23 @@ export default function NewPollForm() {
   }
 
   function handleSubmit() {
+    if (!title || selected.length === 0) {
+      // Basic validation - could add better error messages
+      return;
+    }
+    
     setIsSubmitting(true)
     Polls.create({
       title: title,
-      description: description,
+      description: description || '', // Ensure description is not null
       status: 'open', // new polls will default to being open
     }).then(newPoll => {
       console.log('new poll:', newPoll)
+      if (!newPoll || !newPoll.id) {
+        console.error('Failed to create poll or get poll ID');
+        setIsSubmitting(false);
+        return;
+      }
       Questions.create(selected.map((val, idx) => ({
         value: val,
         poll_id: newPoll.id,
@@ -36,7 +46,15 @@ export default function NewPollForm() {
       }))).then(() => {
         setIsSubmitting(false)
         flashSuccess()
+      }).catch((error) => {
+        console.error('Error creating questions:', error);
+        setIsSubmitting(false);
+        // Could show error message to user here
       })
+    }).catch((error) => {
+      console.error('Error creating poll:', error);
+      setIsSubmitting(false);
+      // Could show error message to user here
     })
   }
 

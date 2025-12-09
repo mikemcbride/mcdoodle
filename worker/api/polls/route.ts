@@ -44,6 +44,22 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         
         try {
             const data = await c.req.json();
+            
+            // Validate required fields
+            if (!data.title) {
+                return c.json({ msg: 'Title is required' }, 400);
+            }
+            
+            // Ensure description is not null (can be empty string)
+            if (data.description === null || data.description === undefined) {
+                data.description = '';
+            }
+            
+            // Ensure status has a default
+            if (!data.status) {
+                data.status = 'open';
+            }
+            
             // in drizzle, multiple insert and single insert use the same mechanism.
             // if `data` is an array, it will insert multiple.
             let response: any = await db.insert(polls).values(data).returning();
@@ -53,7 +69,11 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             return c.json(result, 200);
         } catch (err) {
             console.error('Error creating poll:', err);
-            return c.json({ msg: 'Something went wrong' }, 500);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            return c.json({ 
+                msg: 'Something went wrong', 
+                error: errorMessage 
+            }, 500);
         }
     }
 

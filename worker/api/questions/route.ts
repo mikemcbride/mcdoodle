@@ -42,14 +42,33 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
     if (method === 'POST') {
         try {
             const data = await c.req.json();
-            let response: any = await db.insert(questions).values(data).returning();
+            
+            // Handle both single object and array of objects
+            const isArray = Array.isArray(data);
+            const valuesToInsert = isArray ? data : [data];
+            
+            // Ensure all required fields are present
+            for (const item of valuesToInsert) {
+                if (!item.value || !item.poll_id || item.order === undefined) {
+                    return c.json({ 
+                        msg: 'Missing required fields: value, poll_id, and order are required',
+                        received: item
+                    }, 400);
+                }
+            }
+            
+            let response: any = await db.insert(questions).values(valuesToInsert).returning();
             // if we only inserted one row, we don't need to return an array.
-            const result = Array.isArray(response) && response.length === 1 ? response[0] : response;
+            const result = Array.isArray(response) && response.length === 1 && !isArray ? response[0] : response;
             
             return c.json(result, 200);
         } catch (err) {
-            console.error(err);
-            return c.json({ msg: 'Something went wrong' }, 500);
+            console.error('Error creating questions:', err);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            return c.json({ 
+                msg: 'Something went wrong', 
+                error: errorMessage 
+            }, 500);
         }
     }
 
