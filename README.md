@@ -1,43 +1,54 @@
-# McDoodle
+# React + TypeScript + Vite
 
-I used to use Doodle all the time for finding days that worked best for groups of people to meet. At some point in the last few months, Doodle released a bunch of updates and the SUPER basic functionality that I had used for years suddenly didn't work the way it used to.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-So I'm making an app to fix it. This app has the very basic Doodle functionality of being able to pick a bunch of dates and people can select Yes, No, or If Needed on each of the dates. THATS ALL IT DOES.
+Currently, two official plugins are available:
 
-## Local Dev
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-To start Turso locally and view it in Drizzle Studio:
+## Expanding the ESLint configuration
 
-1. Start the database:
-    ```sh
-    turso dev --db-file local.db
-    ```
-2. Push DB changes:
-    ```sh
-    npx drizzle-kit push
-    ```
-3. Start drizzle studio:
-    ```sh
-    npx drizzle-kit studio
-    ```
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-You can run `./run-db-local.sh` to do all of this for you.
-
-To run the next.js app, `npm run dev`.
-
-### API testing
-
-You can import the `.bruno` folder into Bruno as a collection with all of the API requests to make debugging easier. You'll need to set the `API_SECRET` environment variable.
-
-## Migrations
-
-To run db migrations:
-
-First, make sure your `.envrc` file has the production Turso URL set as the environment variable. Then:
-
-```
-npm run db:generate
-npm run db:migrate
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
-This will generate any necessary migration files and then apply them.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
+```

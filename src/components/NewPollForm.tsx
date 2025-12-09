@@ -1,0 +1,146 @@
+import clsx from 'clsx';
+import { useState } from 'react';
+import { Link, useRouter } from '@tanstack/react-router';
+
+import Polls from '../services/polls';
+import Questions from '../services/questions'
+import CalendarGrid from './CalendarGrid.js'
+import Spinner from './Spinner.js'
+import SuccessAlert from './SuccessAlert.js'
+
+export default function NewPollForm() {
+  const router = useRouter()
+
+  const [selected, setSelected] = useState<string[]>([])
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  function updateSelected(val: any) {
+    setSelected(val)
+  }
+
+  function handleSubmit() {
+    if (!title || selected.length === 0) {
+      // Basic validation - could add better error messages
+      return;
+    }
+    
+    setIsSubmitting(true)
+    Polls.create({
+      title: title,
+      description: description || '', // Ensure description is not null
+      status: 'open', // new polls will default to being open
+    }).then(newPoll => {
+      if (!newPoll || !newPoll.id) {
+        console.error('Failed to create poll or get poll ID');
+        setIsSubmitting(false);
+        return;
+      }
+      // Sort selected dates to ensure proper ordering (important when dates span multiple months)
+      // Filter out any invalid dates and ensure they're valid ISO date strings
+      const sortedSelected = [...selected]
+        .filter(val => val && typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/))
+        .sort();
+      
+      if (sortedSelected.length === 0) {
+        console.error('No valid dates selected');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const questionsToCreate = sortedSelected.map((val, idx) => ({
+        value: val,
+        poll_id: newPoll.id,
+        order: idx
+      }));
+      
+      console.log('Creating questions:', questionsToCreate.length, 'questions for poll:', newPoll.id);
+      
+      Questions.create(questionsToCreate).then(() => {
+        setIsSubmitting(false)
+        flashSuccess()
+      }).catch((error) => {
+        console.error('Error creating questions:', error);
+        console.error('Error response:', error?.response?.data || error?.response || error?.message || error);
+        console.error('Questions that failed:', questionsToCreate);
+        setIsSubmitting(false);
+        // Could show error message to user here
+      })
+    }).catch((error) => {
+      console.error('Error creating poll:', error);
+      setIsSubmitting(false);
+      // Could show error message to user here
+    })
+  }
+
+  function flashSuccess() {
+    setShowSuccess(true)
+    setTimeout(() => {
+      setShowSuccess(false)
+      router.navigate({ href: '/'})
+    }, 2000)
+  }
+  return (<div>
+    <h2 className="text-4xl font-black text-gray-900">New Poll</h2>
+    <section className="mt-8 space-y-6 max-w-lg">
+      <div>
+        <label
+          htmlFor="title"
+          className="block text-sm font-medium text-gray-700"
+        >Title</label
+        >
+        <div className="mt-1">
+          <input
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            name="title"
+            id="title"
+            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            placeholder="Your awesome poll"
+          />
+        </div>
+      </div>
+      <div>
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700"
+        >Description (optional)</label
+        >
+        <div className="mt-1">
+          <textarea
+            rows={4}
+            name="description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            id="description"
+            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+          />
+        </div>
+      </div>
+    </section>
+    <section className="mt-4 sm:mt-8">
+      <h3 className="hidden sm:block text-2xl font-bold">Choose Dates</h3>
+      <CalendarGrid selected={selected} onUpdate={updateSelected} />
+    </section>
+
+    <SuccessAlert show={showSuccess} />
+
+    <footer className="mt-4 flex flex-col-reverse sm:flex-row justify-end w-full max-w-3xl gap-4">
+      <Link
+        to="/"
+        className="inline-flex items-center justify-center px-4 py-3 sm:py-2 text-center border border-gray-300 shadow-sm text-lg sm:text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >Cancel</Link>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={isSubmitting}
+        className={clsx("w-full sm:w-auto flex sm:inline-flex justify-center items-center px-4 py-3 sm:py-2 border border-transparent text-lg sm:text-sm text-center font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500", isSubmitting && 'bg-opacity-60 cursor-not-allowed')}
+      >
+        <Spinner className="text-white h-4 w-4 mr-2" show={isSubmitting} /> {isSubmitting ? 'Submitting' : 'Submit'}
+      </button>
+    </footer>
+  </div>)
+}
