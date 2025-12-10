@@ -138,7 +138,7 @@ export async function handleUsers(c: HandlerContext, env: Env) {
 
             // Import email template dynamically - using @ts-ignore because we're importing React components in a worker
             // @ts-expect-error - importing React components in worker
-            const { VerifyEmailTemplate } = await import('../../../src/components/EmailTemplates.tsx');
+            const VerifyEmailTemplate = await import('../../../emails/verify-email.tsx');
             
             await resend.emails.send({
                 from: 'McDoodle <mcdoodle+registration@email.mcbrides.us>',

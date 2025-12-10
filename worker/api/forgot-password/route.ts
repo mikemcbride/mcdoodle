@@ -40,7 +40,7 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
 
     // Import email template dynamically - using @ts-expect-error because we're importing React components in a worker
     // @ts-expect-error - importing React components in worker
-    const { ForgotPasswordTemplate } = await import('../../../src/components/EmailTemplates.tsx');
+    const ForgotPasswordTemplate = await import('../../../emails/forgot-password.tsx');
 
     const { data, error } = await resend.emails.send({
         from: 'McDoodle <mcdoodle+password-reset@email.mcbrides.us>',
