@@ -11,11 +11,9 @@ export default function PollList({
   isAdmin?: boolean;
   onRemovePoll?: (id: string) => void;
 }) {
-  // TODO: Look into using this component:
-  // https://tailwindcss.com/plus/ui-blocks/application-ui/lists/stacked-lists#component-f0f183415de745e81fa742d6e1df9e04
   return (
-    <div className="bg-white shadow overflow:hidden rounded-md">
-      <ul role="list" className="mt-6 divide-y divide-gray-200">
+      <ul role="list"
+        className="mt-6 divide-y divide-gray-100 overflow-hidden bg-white shadow-xs outline-1 outline-gray-900/5 rounded-xl">
         {polls.length > 0 ? (
           polls.map((poll) => {
             if (isAdmin) {
@@ -35,6 +33,5 @@ export default function PollList({
           </p>
         )}
       </ul>
-    </div>
   );
 }

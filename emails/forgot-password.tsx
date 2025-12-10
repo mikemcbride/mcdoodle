@@ -3,6 +3,7 @@ import {
   Button,
   Container,
   Head,
+  Hr,
   Html,
   Preview,
   Section,
@@ -10,6 +11,7 @@ import {
   Text,
   pixelBasedPreset,
 } from "@react-email/components";
+import Logo from "../src/components/Logo";
 import * as React from "react";
 
 export default function ForgotPasswordTemplate({
@@ -40,6 +42,13 @@ export default function ForgotPasswordTemplate({
                 to anyone.
               </Text>
               <Text className="text-base mb-8">Happy Doodling!</Text>
+            </Section>
+            <Hr className="mb-12" />
+            <Section className="text-center pb-8">
+              <Logo className="mx-auto h-12 w-auto text-gray-400" />
+              <Text className="text-xs text-gray-500 mt-4">
+                &copy; {new Date().getFullYear()} McDoodle. All rights reserved.
+              </Text>
             </Section>
           </Container>
         </Body>

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import AppMenu from './AppMenu';
 import { useAuth } from '../auth';
+import Logo from './Logo';
 
 export default function AppHeader() {
   const { user } = useAuth();
@@ -9,7 +10,9 @@ export default function AppHeader() {
     <header className="bg-blue-600 shadow-sm">
       <div className="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
         <h1 className="text-2xl leading-6 font-bold text-white">
-          <Link to="/" className="hover:opacity-90">McDoodle</Link>
+          <Link to="/" className="hover:opacity-90">
+            <Logo className="h-8 w-auto" />
+          </Link>
         </h1>
         <div>
           {user ? (<AppMenu />) : (

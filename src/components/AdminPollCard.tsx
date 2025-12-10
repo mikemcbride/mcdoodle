@@ -31,7 +31,7 @@ export default function AdminPollCard({
   }
 
   return (
-    <li>
+    <li className="w-full relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6">
       <Dialog open={isOpen} onClose={setIsOpen} className="absolute z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex mt-24 items-start justify-center p-4">

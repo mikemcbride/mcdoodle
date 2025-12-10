@@ -7,12 +7,12 @@ export default function PollCard({ poll }: { poll: Poll }) {
     const submissionText = submissions === 1 ? 'submission' : 'submissions';
 
     return (
-        <li>
+        <li className="w-full relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6">
             <Link
                 to="/polls/$id"
                 params={{ id: poll.id }}
-                className="block hover:bg-gray-50">
-                <div className="px-4 py-4 flex items-center sm:px-6">
+                className="block w-full">
+                <div className="flex min-w-0 gap-x-4 items-center">
                     <div className="flex-1">
                         <div className="flex text-base lg:text-lg">
                             <p className="font-medium text-blue-600">{poll.title}</p>
