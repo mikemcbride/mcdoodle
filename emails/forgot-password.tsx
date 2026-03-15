@@ -16,7 +16,9 @@ import * as React from "react";
 
 export default function ForgotPasswordTemplate({
   user,
-}: { user: { firstName: string } }) {
+  token,
+  baseUrl,
+}: { user: { firstName: string }, token: string, baseUrl: string }) {
   return (
     <Tailwind config={{ presets: [pixelBasedPreset] }}>
       <Html>
@@ -30,7 +32,7 @@ export default function ForgotPasswordTemplate({
                 Someone recently requested a password change for your McDoodle
                 account. If this was you, you can set a new password here:
               </Text>
-              <Button className="bg-blue-600 text-white px-8 py-2 text-sm text-center rounded-lg mb-4">
+              <Button href={`${baseUrl}/reset-password?token=${token}`} className="bg-blue-600 text-white px-8 py-2 text-sm text-center rounded-lg mb-4">
                 Reset Password
               </Button>
               <Text className="text-base mb-8">

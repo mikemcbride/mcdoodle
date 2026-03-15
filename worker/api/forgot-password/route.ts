@@ -46,8 +46,8 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
         from: 'McDoodle <mcdoodle+password-reset@email.mcbrides.us>',
         to: [verificationRecord.email],
         subject: 'McDoodle Password Reset Request',
-        react: ForgotPasswordTemplate({ 
-            token: verificationRecord.id, 
+        react: ForgotPasswordTemplate.default({
+            token: verificationRecord.id,
             user: userRes[0],
             baseUrl: baseUrl
         }),
