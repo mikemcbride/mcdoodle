@@ -31,7 +31,7 @@ export default function AdminPollCard({
   }
 
   return (
-    <li className="w-full relative flex justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6">
+    <li className="w-full relative flex items-center justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6">
       <Dialog open={isOpen} onClose={setIsOpen} className="absolute z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex mt-24 items-start justify-center p-4">
@@ -72,31 +72,27 @@ export default function AdminPollCard({
           </DialogPanel>
         </div>
       </Dialog>
-      <div>
-        <div className="px-4 py-4 flex items-center sm:px-6">
-          <div className="flex-1">
-            <div className="flex text-base lg:text-lg">
-              <p className="font-medium text-blue-600">{poll.title}</p>
-            </div>
-            <p className="text-sm lg:text-base text-gray-500">
-              {poll.description || ""}
-            </p>
-          </div>
-          <div className="hidden sm:block flex-shrink-0 mt-0 sm:mr-5">
-            <p className="text-sm text-gray-500">
-              {submissions} {submissionText}
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <button
-              onClick={() => setIsOpen(true)}
-              type="button"
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              Delete poll
-            </button>
-          </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex text-base lg:text-lg">
+          <p className="font-medium text-blue-600">{poll.title}</p>
         </div>
+        <p className="text-sm lg:text-base text-gray-500">
+          {poll.description || ""}
+        </p>
+      </div>
+      <div className="hidden sm:block flex-shrink-0">
+        <p className="text-sm text-gray-500">
+          {submissions} {submissionText}
+        </p>
+      </div>
+      <div className="flex-shrink-0">
+        <button
+          onClick={() => setIsOpen(true)}
+          type="button"
+          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          Delete poll
+        </button>
       </div>
     </li>
   );
