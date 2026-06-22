@@ -144,10 +144,9 @@ export async function handleUsers(c: HandlerContext, env: Env) {
                 from: 'McDoodle <mcdoodle+registration@email.mcbrides.us>',
                 to: [user.email],
                 subject: 'McDoodle Account Verification',
-            react: VerifyEmailTemplate({
+            react: VerifyEmailTemplate.default({
                 email: user.email,
                 firstName: user.firstName || '',
-                lastName: user.lastName || '',
                 token: verificationRecord.id,
                 baseUrl: baseUrl
             }),
