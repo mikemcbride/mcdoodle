@@ -11,6 +11,8 @@ const LS_USER_KEY = "mcdoodle.user";
 // immediately and let the (synchronous) route guards work. The server is always
 // the source of truth and re-validates via GET /api/me below.
 function getStoredUser() {
+  // No localStorage during SSR; hydrate the hint on the client.
+  if (typeof window === "undefined") return null;
   const user = localStorage.getItem(LS_USER_KEY);
   if (user) {
     return JSON.parse(user);
@@ -19,6 +21,7 @@ function getStoredUser() {
 }
 
 function setStoredUser(user: string | null) {
+  if (typeof window === "undefined") return;
   if (user) {
     localStorage.setItem(LS_USER_KEY, user);
   } else {
@@ -59,6 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const dispatchUserChange = (val: AuthUser | null) => {
+    if (typeof window === "undefined") return;
     const userEvent = new CustomEvent("mcdoodleUserUpdated", {
       detail: JSON.stringify(val),
     });
@@ -95,14 +99,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     updateUser,
   };
 
-  // Don't render children until we've set up auth state.
-  if (authReady) {
-    return (
-      <AuthContext.Provider value={exposed}>{children}</AuthContext.Provider>
-    );
-  } else {
-    return null;
-  }
+  // Always render children — the auth hint is read synchronously on the client
+  // and revalidated against the server; SSR renders with a null user.
+  void authReady;
+  return (
+    <AuthContext.Provider value={exposed}>{children}</AuthContext.Provider>
+  );
 };
 
 export function useAuth() {
