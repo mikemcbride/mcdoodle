@@ -4,7 +4,6 @@ import type { users } from '../db/schema/users.js';
 
 export interface Env {
 	DB: D1Database;
-	ASSETS: Fetcher;
 	PASSWORD_SALT: string;
 	API_SECRET: string;
 	RESEND_API_KEY: string;
