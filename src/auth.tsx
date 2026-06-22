@@ -5,21 +5,10 @@ import http from "./services/http";
 
 const LS_USER_KEY = "mcdoodle.user";
 
-// NOTE: the real credential is now an HttpOnly session cookie that the browser
-// sends automatically and that the server validates. The value we keep in
-// localStorage is only a non-sensitive "hint" so we can render the correct UI
-// immediately and let the (synchronous) route guards work. The server is always
-// the source of truth and re-validates via GET /api/me below.
-function getStoredUser() {
-  // No localStorage during SSR; hydrate the hint on the client.
-  if (typeof window === "undefined") return null;
-  const user = localStorage.getItem(LS_USER_KEY);
-  if (user) {
-    return JSON.parse(user);
-  }
-  return user;
-}
-
+// NOTE: the real credential is an HttpOnly session cookie the browser sends
+// automatically and the server validates. The value we keep in localStorage is
+// only a non-sensitive "hint" so the (synchronous) client route guards work.
+// The authoritative user is resolved server-side in the root loader.
 function setStoredUser(user: string | null) {
   if (typeof window === "undefined") return;
   if (user) {
@@ -29,37 +18,23 @@ function setStoredUser(user: string | null) {
   }
 }
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [authReady, setAuthReady] = React.useState(false);
-  const [user, setUser] = React.useState<AuthUser | null>(getStoredUser());
+export const AuthProvider = ({
+  children,
+  initialUser = null,
+}: {
+  children: React.ReactNode;
+  // Resolved on the server from the session cookie (see root route loader) so
+  // the first render — server and client — reflects the real auth state.
+  initialUser?: AuthUser | null;
+}) => {
+  const [user, setUser] = React.useState<AuthUser | null>(initialUser);
   const isAuthenticated = !!user;
 
-  // Render immediately from the stored hint, then revalidate the session against
-  // the server in the background. Only an explicit 401 clears the session; a
-  // transient network error should not log the user out.
+  // Keep the localStorage hint in sync with the server-resolved user (used only
+  // by the synchronous client route guards).
   React.useEffect(() => {
-    setAuthReady(true);
-    let cancelled = false;
-    http
-      .get("/me")
-      .then(({ data }) => {
-        if (cancelled) return;
-        setStoredUser(JSON.stringify(data));
-        setUser(data);
-        dispatchUserChange(data);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (err?.response?.status === 401) {
-          setStoredUser(null);
-          setUser(null);
-          dispatchUserChange(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    setStoredUser(initialUser ? JSON.stringify(initialUser) : null);
+  }, [initialUser]);
 
   const dispatchUserChange = (val: AuthUser | null) => {
     if (typeof window === "undefined") return;
@@ -99,9 +74,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     updateUser,
   };
 
-  // Always render children — the auth hint is read synchronously on the client
-  // and revalidated against the server; SSR renders with a null user.
-  void authReady;
   return (
     <AuthContext.Provider value={exposed}>{children}</AuthContext.Provider>
   );

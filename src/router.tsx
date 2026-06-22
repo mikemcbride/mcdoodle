@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 
 import { routeTree } from './routeTree.gen'
-import { AuthProvider } from './auth'
 
 export function getRouter() {
   const queryClient = new QueryClient()
@@ -14,9 +13,7 @@ export function getRouter() {
     defaultPreload: 'intent',
     scrollRestoration: true,
     Wrap: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     ),
   })
 
