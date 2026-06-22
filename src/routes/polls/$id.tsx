@@ -6,7 +6,7 @@ import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
 import SubmissionForm from '../../components/SubmissionForm';
 import Breadcrumbs from '../../components/Breadcrumbs';
-import { PencilSquareIcon } from '@heroicons/react/24/solid';
+import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import Polls from '../../services/polls';
 import { Poll, Submission } from '../../types';
 
@@ -78,10 +78,17 @@ function RouteComponent() {
       <p className="mt-2 text-lg text-gray-700">{poll.description}</p>
 
       {isClosed && (
-        <div className="mt-4 rounded-md bg-gray-50 p-4 ring-1 ring-inset ring-gray-200">
-          <p className="text-sm font-medium text-gray-700">
-            This poll is closed and is no longer accepting responses.
-          </p>
+        <div className="mt-4 rounded-md bg-yellow-50 p-4">
+          <div className="flex">
+            <div className="shrink-0">
+              <ExclamationTriangleIcon aria-hidden="true" className="size-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-yellow-800">
+                This poll is closed and is no longer accepting responses.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

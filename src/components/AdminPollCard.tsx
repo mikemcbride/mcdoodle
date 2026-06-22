@@ -50,7 +50,7 @@ export default function AdminPollCard({
   }
 
   return (
-    <li className="w-full relative flex items-center justify-between gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6">
+    <li className="w-full relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-x-6 px-4 py-5 hover:bg-gray-50 sm:px-6">
       <Dialog open={isOpen} onClose={setIsOpen} className="absolute z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex mt-24 items-start justify-center p-4">
@@ -91,7 +91,7 @@ export default function AdminPollCard({
           </DialogPanel>
         </div>
       </Dialog>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 sm:flex-1">
         <div className="flex items-center gap-2 text-base lg:text-lg">
           <p className="font-medium text-blue-600">{poll.title}</p>
           {status === "closed" && (
