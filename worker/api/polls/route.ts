@@ -12,6 +12,31 @@ export async function handlePolls(c: HandlerContext, env: Env) {
 
     if (method === 'GET') {
         const id = c.req.query('id');
+        const full = c.req.query('full');
+
+        // Composed detail: one round-trip returns the poll with its questions and
+        // its submissions (each with their responses), joined server-side.
+        if (id && full) {
+            try {
+                const [poll] = await db.select().from(polls).where(eq(polls.id, id));
+                if (!poll) {
+                    return c.json({ msg: 'Not found' }, 404 as const);
+                }
+                const [questionRows, submissionRows, responseRows] = await Promise.all([
+                    db.select().from(questions).where(eq(questions.poll_id, id)),
+                    db.select().from(submissions).where(eq(submissions.poll_id, id)),
+                    db.select().from(responses).where(eq(responses.poll_id, id)),
+                ]);
+                const submissionsWithResponses = submissionRows.map((s) => ({
+                    ...s,
+                    responses: responseRows.filter((r) => r.submission_id === s.id),
+                }));
+                return c.json({ ...poll, questions: questionRows, submissions: submissionsWithResponses }, 200 as const);
+            } catch (err) {
+                console.error('Error fetching poll detail:', err);
+                return c.json({ msg: 'Something went wrong' }, 500 as const);
+            }
+        }
         
         let q: any = db.select().from(polls);
         if (id) {

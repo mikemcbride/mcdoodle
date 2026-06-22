@@ -50,6 +50,12 @@ export default class Polls {
         return null
     }
 
+    // Composed fetch: poll + questions + submissions (with responses) in one request.
+    static async findFull(id: string) {
+        const { data } = await http.get('/polls', { params: { id, full: true } })
+        return data
+    }
+
     static async create(payload: any) {
         // create requires an authenticated session (enforced server-side via cookie).
         const { data } = await http.post('/polls', payload)

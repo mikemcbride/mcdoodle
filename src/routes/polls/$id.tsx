@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
@@ -7,9 +8,6 @@ import SubmissionForm from '../../components/SubmissionForm';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { PencilSquareIcon } from '@heroicons/react/24/solid';
 import Polls from '../../services/polls';
-import Submissions from '../../services/submissions';
-import Questions from '../../services/questions';
-import Responses from '../../services/responses';
 import { Poll, Submission } from '../../types';
 
 export const Route = createFileRoute('/polls/$id')({
@@ -18,67 +16,27 @@ export const Route = createFileRoute('/polls/$id')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
-  const [poll, setPoll] = useState<Poll | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const queryClient = useQueryClient();
   const [isAddingSubmission, setIsAddingSubmission] = useState(false);
   const [submissionToEdit, setSubmissionToEdit] = useState<Submission | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [crumbs, setCrumbs] = useState<Array<{ name: string; href: string; current: boolean }>>([]);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        // poll has questions embedded,
-        // submissions have responses embedded.
-        const [pollData, submissionData, questionData, responseData] =
-          await Promise.all([
-            Polls.findById(id, true), // true to bust cache
-            Submissions.find({ poll_id: id }),
-            Questions.find({ poll_id: id }),
-            Responses.find({ poll_id: id }),
-          ]);
+  // One composed request returns the poll with its questions and submissions
+  // (each with their responses). React Query handles caching/refetching.
+  const { data: poll, isLoading } = useQuery<Poll | null>({
+    queryKey: ['poll', id],
+    queryFn: () => Polls.findFull(id),
+  });
 
-        if (!pollData) {
-          setLoading(false);
-          return;
-        }
+  const questions = _orderBy(poll?.questions ?? [], 'value');
+  const submissions = poll?.submissions ?? [];
+  const isClosed = poll?.status === 'closed';
+  // SubmissionForm expects questions in display order.
+  const pollForForm = poll ? { ...poll, questions } : null;
 
-        pollData.questions = _orderBy(questionData, 'value');
-        submissionData.forEach((submission: Submission) => {
-          submission.responses = responseData.filter((response: any) => response.submission_id === submission.id);
-        });
-
-        setPoll(pollData);
-        setSubmissions(submissionData);
-        setCrumbs([
-          { name: 'Polls', href: '/', current: false },
-          { name: pollData.title, href: `/polls/${pollData.id}`, current: true },
-        ]);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [id]);
-
-  function handleFormSubmission(data: Submission) {
-    // check if local submissions includes the id.
-    // if so, replace it. otherwise, add it.
-    if (submissionToEdit !== null) {
-      setSubmissions(submissions.map(s => {
-        if (s.id === data.id) {
-          return data;
-        } else {
-          return s;
-        }
-      }));
-      setSubmissionToEdit(null);
-    } else {
-      setSubmissions([...submissions, data]);
-    }
+  function handleFormSubmission() {
+    // The mutation already persisted; refetch the composed poll to reflect it.
+    queryClient.invalidateQueries({ queryKey: ['poll', id] });
+    setSubmissionToEdit(null);
     setIsAddingSubmission(false);
   }
 
@@ -89,7 +47,7 @@ function RouteComponent() {
 
   function handleEditSubmission(submission: Submission) {
     // can't edit responses on a closed poll.
-    if (poll?.status === "closed") {
+    if (isClosed) {
       return;
     }
     // don't allow editing if we're already editing.
@@ -100,7 +58,7 @@ function RouteComponent() {
     setIsAddingSubmission(true);
   }
 
-  if (loading) {
+  if (isLoading) {
     return <div>Loading poll details...</div>;
   }
 
@@ -108,7 +66,10 @@ function RouteComponent() {
     return <div>Poll not found</div>;
   }
 
-  const isClosed = poll.status === "closed";
+  const crumbs = [
+    { name: 'Polls', href: '/', current: false },
+    { name: poll.title, href: `/polls/${poll.id}`, current: true },
+  ];
 
   return (
     <section>
@@ -124,12 +85,12 @@ function RouteComponent() {
         </div>
       )}
 
-      {isAddingSubmission && (
-        <SubmissionForm 
-          poll={poll} 
-          submission={submissionToEdit} 
-          handleCancel={handleCancelSubmission} 
-          handleSubmitted={handleFormSubmission} 
+      {isAddingSubmission && pollForForm && (
+        <SubmissionForm
+          poll={pollForForm}
+          submission={submissionToEdit}
+          handleCancel={handleCancelSubmission}
+          handleSubmitted={handleFormSubmission}
         />
       )}
 
@@ -155,9 +116,9 @@ function RouteComponent() {
                     <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Date</th>
                     {submissions.map(submission => (
                       <th key={`col_${submission.id}`} scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        <button 
-                          className="inline-flex items-center group" 
-                          title="Edit response" 
+                        <button
+                          className="inline-flex items-center group"
+                          title="Edit response"
                           onClick={() => handleEditSubmission(submission)}
                         >
                           {submission.person} <PencilSquareIcon className="opacity-0 group-hover:opacity-100 h-3 w-3 ml-1 text-gray-500" />
@@ -167,7 +128,7 @@ function RouteComponent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {poll.questions?.map((question) => {
+                  {questions.map((question) => {
                     return (
                       <tr key={question.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{question.value}</td>
@@ -187,9 +148,9 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-      {submissions.length > 0 && poll.questions && poll.questions.length > 0 && (
+      {submissions.length > 0 && questions.length > 0 && (
         <div className="mt-20">
-          <RankedResults questions={poll.questions} submissions={submissions} />
+          <RankedResults questions={questions} submissions={submissions} />
         </div>
       )}
     </section>
