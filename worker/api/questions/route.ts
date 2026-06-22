@@ -49,35 +49,20 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
             
             // Validate array is not empty
             if (valuesToInsert.length === 0) {
-                return c.json({ 
-                    msg: 'No questions provided',
-                    received: data
-                }, 400);
+                return c.json({ msg: 'No questions provided' }, 400);
             }
             
             // Ensure all required fields are present
             for (let i = 0; i < valuesToInsert.length; i++) {
                 const item = valuesToInsert[i];
                 if (!item.value || typeof item.value !== 'string') {
-                    return c.json({ 
-                        msg: `Missing or invalid 'value' field at index ${i}`,
-                        received: item,
-                        index: i
-                    }, 400);
+                    return c.json({ msg: `Missing or invalid 'value' field at index ${i}`, index: i }, 400);
                 }
                 if (!item.poll_id || typeof item.poll_id !== 'string') {
-                    return c.json({ 
-                        msg: `Missing or invalid 'poll_id' field at index ${i}`,
-                        received: item,
-                        index: i
-                    }, 400);
+                    return c.json({ msg: `Missing or invalid 'poll_id' field at index ${i}`, index: i }, 400);
                 }
                 if (item.order === undefined || item.order === null || typeof item.order !== 'number') {
-                    return c.json({ 
-                        msg: `Missing or invalid 'order' field at index ${i}. Must be a number.`,
-                        received: item,
-                        index: i
-                    }, 400);
+                    return c.json({ msg: `Missing or invalid 'order' field at index ${i}. Must be a number.`, index: i }, 400);
                 }
             }
             
@@ -115,14 +100,7 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
             return c.json(result, 200);
         } catch (err) {
             console.error('Error creating questions:', err);
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            const errorStack = err instanceof Error ? err.stack : undefined;
-            console.error('Error stack:', errorStack);
-            return c.json({ 
-                msg: 'Something went wrong', 
-                error: errorMessage,
-                stack: errorStack
-            }, 500);
+            return c.json({ msg: 'Something went wrong' }, 500);
         }
     }
 

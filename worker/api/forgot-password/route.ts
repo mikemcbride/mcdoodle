@@ -44,7 +44,7 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
     // @ts-expect-error - importing React components in worker
     const ForgotPasswordTemplate = await import('../../../emails/forgot-password.tsx');
 
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
         from: 'McDoodle <mcdoodle+password-reset@email.mcbrides.us>',
         to: [verificationRecord.email],
         subject: 'McDoodle Password Reset Request',
@@ -57,8 +57,8 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
 
     if (error) {
         console.error('An error occurred processing the forgot password request', error);
-        return c.json(error, 400);
+        return c.json({ error: 'Unable to send reset email. Please try again later.' }, 500);
     }
 
-    return c.json(data, 200);
+    return c.json({ message: 'ok' }, 200);
 }

@@ -30,8 +30,7 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             return c.json(data, 200 as const);
         } catch (err) {
             console.error('Error fetching polls:', err);
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            return c.json({ msg: 'Something went wrong', error: errorMessage }, 500 as const);
+            return c.json({ msg: 'Something went wrong' }, 500 as const);
         }
     }
 
@@ -69,11 +68,7 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             return c.json(result, 200);
         } catch (err) {
             console.error('Error creating poll:', err);
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            return c.json({ 
-                msg: 'Something went wrong', 
-                error: errorMessage 
-            }, 500);
+            return c.json({ msg: 'Something went wrong' }, 500);
         }
     }
 
@@ -101,8 +96,7 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             return c.json(result, 200);
         } catch (err) {
             console.error('Error updating poll:', err);
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            return c.json({ msg: 'Something went wrong', error: errorMessage }, 500);
+            return c.json({ msg: 'Something went wrong' }, 500);
         }
     }
 

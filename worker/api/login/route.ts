@@ -69,6 +69,6 @@ export async function handleLogin(c: HandlerContext, env: Env) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         const errorStack = err instanceof Error ? err.stack : undefined;
         console.error('Login error details:', { errorMessage, errorStack });
-        return c.json({ error: 'Invalid request', details: errorMessage }, 400);
+        return c.json({ error: 'Invalid request' }, 400);
     }
 }
