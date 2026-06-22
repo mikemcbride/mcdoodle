@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
@@ -8,6 +9,7 @@ import SubmissionForm from '../../components/SubmissionForm';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import Polls from '../../services/polls';
+import { useAuth } from '../../auth';
 import { Poll, Submission } from '../../types';
 
 export const Route = createFileRoute('/polls/$id')({
@@ -16,9 +18,11 @@ export const Route = createFileRoute('/polls/$id')({
 
 function RouteComponent() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAddingSubmission, setIsAddingSubmission] = useState(false);
   const [submissionToEdit, setSubmissionToEdit] = useState<Submission | null>(null);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
   // One composed request returns the poll with its questions and submissions
   // (each with their responses). React Query handles caching/refetching.
@@ -30,6 +34,8 @@ function RouteComponent() {
   const questions = _orderBy(poll?.questions ?? [], 'value');
   const submissions = poll?.submissions ?? [];
   const isClosed = poll?.status === 'closed';
+  // poll requires an account and the visitor isn't signed in
+  const needsAccount = !!poll?.requiresAccount && !user;
   // SubmissionForm expects questions in display order.
   const pollForForm = poll ? { ...poll, questions } : null;
 
@@ -46,6 +52,11 @@ function RouteComponent() {
   }
 
   function handleEditSubmission(submission: Submission) {
+    // poll requires an account to participate.
+    if (needsAccount) {
+      setShowAccountPrompt(true);
+      return;
+    }
     // can't edit responses on a closed poll.
     if (isClosed) {
       return;
@@ -73,6 +84,32 @@ function RouteComponent() {
 
   return (
     <section>
+      <Dialog open={showAccountPrompt} onClose={setShowAccountPrompt} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-start justify-center p-4 mt-24">
+          <DialogPanel className="w-full max-w-md rounded-lg shadow-md bg-white p-6">
+            <DialogTitle className="text-2xl font-bold text-gray-900">Create a free account</DialogTitle>
+            <Description className="text-base mt-4 text-gray-600">
+              This poll requires an account to participate. Create a free account to add your response.
+            </Description>
+            <footer className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={() => setShowAccountPrompt(false)}
+                type="button"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <Link
+                to="/sign-up"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Create free account
+              </Link>
+            </footer>
+          </DialogPanel>
+        </div>
+      </Dialog>
       <Breadcrumbs pages={crumbs} />
       <h2 className="text-3xl font-black text-gray-900">{poll.title}</h2>
       <p className="mt-2 text-lg text-gray-700">{poll.description}</p>
@@ -107,7 +144,7 @@ function RouteComponent() {
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto"
-            onClick={() => setIsAddingSubmission(true)}
+            onClick={() => (needsAccount ? setShowAccountPrompt(true) : setIsAddingSubmission(true))}
           >
             Vote
           </button>

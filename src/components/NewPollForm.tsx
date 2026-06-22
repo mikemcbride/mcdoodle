@@ -17,6 +17,7 @@ export default function NewPollForm() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [allowIfNeeded, setAllowIfNeeded] = useState(true)
+  const [requiresAccount, setRequiresAccount] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -36,6 +37,7 @@ export default function NewPollForm() {
       description: description || '', // Ensure description is not null
       status: 'open', // new polls will default to being open
       allowIfNeeded: allowIfNeeded,
+      requiresAccount: requiresAccount,
     }).then(newPoll => {
       if (!newPoll || !newPoll.id) {
         console.error('Failed to create poll or get poll ID');
@@ -135,6 +137,18 @@ export default function NewPollForm() {
         />
         <label htmlFor="allow-if-needed" className="text-sm font-medium text-gray-700">
           Allow &ldquo;If Needed&rdquo; as a response option
+        </label>
+      </div>
+      <div className="flex items-center gap-3">
+        <input
+          id="requires-account"
+          type="checkbox"
+          checked={requiresAccount}
+          onChange={e => setRequiresAccount(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label htmlFor="requires-account" className="text-sm font-medium text-gray-700">
+          Require participants to have an account
         </label>
       </div>
     </section>

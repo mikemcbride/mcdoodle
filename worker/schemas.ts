@@ -33,6 +33,7 @@ export const createPollSchema = z.object({
     description: z.string().optional().default(''),
     status: z.enum(['open', 'closed']).optional().default('open'),
     allowIfNeeded: z.boolean().optional().default(true),
+    requiresAccount: z.boolean().optional().default(false),
 });
 
 export const updatePollStatusSchema = z.object({

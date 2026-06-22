@@ -64,6 +64,12 @@ export async function handleSubmissions(c: HandlerContext, env: Env) {
                 return c.json({ msg: 'This poll is closed and is no longer accepting responses.' }, 403);
             }
 
+            // Reject anonymous submissions to polls that require an account.
+            const currentUser = c.get('user');
+            if (!currentUser && pollRows.some((p) => p.requiresAccount)) {
+                return c.json({ msg: 'You must create an account to participate in this poll.' }, 401);
+            }
+
             console.log(`Inserting ${valuesToInsert.length} submissions`);
             
             // SQLite/D1 has a limit on the number of variables in a single statement

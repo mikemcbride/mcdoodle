@@ -1,0 +1,1 @@
+ALTER TABLE `polls` ADD `requires_account` integer DEFAULT 0 NOT NULL;
