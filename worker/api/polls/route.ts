@@ -19,7 +19,15 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         // List view: each poll with its submission count, computed server-side
         // (avoids shipping every submission to the client to count them).
         if (withCounts) {
+            const currentUser = c.get('user');
+            // The dashboard only lists polls you can access. Anonymous visitors
+            // reach individual polls by direct link, not via this list.
+            if (!currentUser) {
+                return c.json([], 200 as const);
+            }
             try {
+                // admins see all polls; everyone else sees only the ones they created
+                const ownerFilter = currentUser.isAdmin ? undefined : eq(polls.createdBy, currentUser.id);
                 const rows = await db
                     .select({
                         id: polls.id,
@@ -31,6 +39,7 @@ export async function handlePolls(c: HandlerContext, env: Env) {
                     })
                     .from(polls)
                     .leftJoin(submissions, eq(submissions.poll_id, polls.id))
+                    .where(ownerFilter)
                     .groupBy(polls.id);
                 return c.json(rows, 200 as const);
             } catch (err) {
@@ -96,7 +105,7 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             if (!parsed.success) {
                 return c.json({ msg: 'Invalid request', errors: parsed.error.flatten().fieldErrors }, 400);
             }
-            const response = await db.insert(polls).values(parsed.data).returning();
+            const response = await db.insert(polls).values({ ...parsed.data, createdBy: currentUser.id }).returning();
             const result = Array.isArray(response) && response.length === 1 ? response[0] : response;
             
             return c.json(result, 200);
@@ -119,6 +128,14 @@ export async function handlePolls(c: HandlerContext, env: Env) {
                 return c.json({ msg: 'Invalid request', errors: parsed.error.flatten().fieldErrors }, 400);
             }
             const { id, status } = parsed.data;
+
+            const [existing] = await db.select().from(polls).where(eq(polls.id, id));
+            if (!existing) {
+                return c.json({ msg: 'Not found' }, 404);
+            }
+            if (!currentUser.isAdmin && existing.createdBy !== currentUser.id) {
+                return c.json({ message: 'forbidden' }, 403);
+            }
 
             const response = await db.update(polls).set({ status }).where(eq(polls.id, id)).returning();
             const result = Array.isArray(response) && response.length === 1 ? response[0] : response;
@@ -145,6 +162,14 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         }
         
         try {
+            const [existing] = await db.select().from(polls).where(eq(polls.id, id));
+            if (!existing) {
+                return c.json({ message: 'not found' }, 404);
+            }
+            if (!currentUser.isAdmin && existing.createdBy !== currentUser.id) {
+                return c.json({ message: 'forbidden' }, 403);
+            }
+
             // foreign key constraints:
             // 1. responses need to be deleted first
             await db.delete(responses).where(eq(responses.poll_id, id));
