@@ -1,40 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import PollList from "../components/PollList";
 import Polls from "../services/polls";
-import Submissions from "../services/submissions";
-
-import { Poll, Submission } from "../types";
 
 export const Route = createFileRoute("/_auth/admin")({
   component: Admin,
 });
 
-// TODO: add types for all data types
 function Admin() {
-  const [localPolls, setPolls] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([Polls.list(), Submissions.find()]).then(
-      ([polls, submissions]) => {
-        setPolls(
-          polls.map((poll: Poll) => {
-            poll.submissions = submissions.filter(
-              (submission: Submission) => submission.poll_id === poll.id,
-            );
-            return poll;
-          }),
-        );
-        setLoading(false);
-      },
-    );
-  }, []);
-
-  function handleRemove(pollId: string) {
-    setPolls(localPolls.filter((p: Poll) => p.id !== pollId));
-  }
+  const { data: localPolls = [], isLoading } = useQuery({
+    queryKey: ["polls"],
+    queryFn: Polls.listWithCounts,
+  });
 
   return (
     <div>
@@ -47,13 +25,7 @@ function Admin() {
           Create Poll
         </Link>
       </div>
-      {!loading && (
-        <PollList
-          polls={localPolls}
-          isAdmin={true}
-          onRemovePoll={handleRemove}
-        />
-      )}
+      {!isLoading && <PollList polls={localPolls} isAdmin={true} />}
     </div>
   );
 }

@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../auth";
 
-import React from "react";
 import PollList from "../components/PollList";
 import Polls from "../services/polls";
-import Submissions from "../services/submissions";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -13,36 +12,10 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { user } = useAuth();
 
-  // Use React's useEffect or SWR to fetch data client-side
-  // This replaces getServerSideProps which isn't available in App Router
-  const [polls, setPolls] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    async function fetchData() {
-      try {
-        const [pollsData, submissionsData] = await Promise.all([
-          Polls.list(),
-          Submissions.find(),
-        ]);
-
-        // Enhance polls with submission data
-        pollsData.forEach((poll: any) => {
-          poll.submissions = submissionsData.filter(
-            (submission: any) => submission.poll_id === poll.id,
-          );
-        });
-
-        setPolls(pollsData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
+  const { data: polls = [], isLoading } = useQuery({
+    queryKey: ["polls"],
+    queryFn: Polls.listWithCounts,
+  });
 
   return (
     <div className="min-h-full">
@@ -58,7 +31,7 @@ function Index() {
             </Link>
           )}
         </div>
-        {loading ? <p>Loading polls...</p> : <PollList polls={polls} />}
+        {isLoading ? <p>Loading polls...</p> : <PollList polls={polls} />}
       </div>
     </div>
   );

@@ -5,11 +5,9 @@ import AdminPollCard from "./AdminPollCard";
 export default function PollList({
   polls,
   isAdmin,
-  onRemovePoll,
 }: {
   polls: any[];
   isAdmin?: boolean;
-  onRemovePoll?: (id: string) => void;
 }) {
   return (
       <ul role="list"
@@ -17,13 +15,7 @@ export default function PollList({
         {polls.length > 0 ? (
           polls.map((poll) => {
             if (isAdmin) {
-              return (
-                <AdminPollCard
-                  key={poll.id}
-                  poll={poll}
-                  onRemovePoll={onRemovePoll}
-                />
-              );
+              return <AdminPollCard key={poll.id} poll={poll} />;
             }
             return <PollCard key={poll.id} poll={poll} />;
           })

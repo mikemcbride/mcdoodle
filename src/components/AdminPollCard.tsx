@@ -1,17 +1,17 @@
 import { useState } from "react";
 import clsx from "clsx";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogPanel, DialogTitle, Description } from "@headlessui/react";
 import Spinner from "./Spinner.js";
 import Polls from "../services/polls.js";
 
 export default function AdminPollCard({
   poll,
-  onRemovePoll,
 }: {
   poll: any;
-  onRemovePoll?: (id: string) => void;
 }) {
-  const submissions = poll.submissions.length > 0 ? poll.submissions.length : 0;
+  const queryClient = useQueryClient();
+  const submissions = poll.submissionCount ?? poll.submissions?.length ?? 0;
   const submissionText = submissions === 1 ? "submission" : "submissions";
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -24,6 +24,7 @@ export default function AdminPollCard({
     Polls.setStatus(poll.id, nextStatus)
       .then(() => {
         setStatus(nextStatus);
+        queryClient.invalidateQueries({ queryKey: ["polls"] });
       })
       .catch((e) => {
         console.error("unable to update poll status", e);
@@ -37,14 +38,14 @@ export default function AdminPollCard({
     setIsDeleting(true);
     Polls.remove(poll.id)
       .then(() => {
-        setIsDeleting(true);
         setIsOpen(false);
-        if (onRemovePoll) {
-          onRemovePoll(poll.id);
-        }
+        queryClient.invalidateQueries({ queryKey: ["polls"] });
       })
       .catch((e) => {
         console.error("unable to remove poll", e);
+      })
+      .finally(() => {
+        setIsDeleting(false);
       });
   }
 

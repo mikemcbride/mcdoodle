@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Link, useRouter } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Polls from '../services/polls';
 import Questions from '../services/questions'
@@ -10,6 +11,7 @@ import SuccessAlert from './SuccessAlert.js'
 
 export default function NewPollForm() {
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const [selected, setSelected] = useState<string[]>([])
   const [title, setTitle] = useState('')
@@ -78,6 +80,7 @@ export default function NewPollForm() {
   }
 
   function flashSuccess() {
+    queryClient.invalidateQueries({ queryKey: ['polls'] })
     setShowSuccess(true)
     setTimeout(() => {
       setShowSuccess(false)

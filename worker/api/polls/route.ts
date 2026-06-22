@@ -3,7 +3,7 @@ import { polls } from '../../../db/schema/polls.js';
 import { questions } from '../../../db/schema/questions.js';
 import { submissions } from '../../../db/schema/submissions.js';
 import { responses } from '../../../db/schema/responses.js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function handlePolls(c: HandlerContext, env: Env) {
@@ -13,6 +13,30 @@ export async function handlePolls(c: HandlerContext, env: Env) {
     if (method === 'GET') {
         const id = c.req.query('id');
         const full = c.req.query('full');
+        const withCounts = c.req.query('withCounts');
+
+        // List view: each poll with its submission count, computed server-side
+        // (avoids shipping every submission to the client to count them).
+        if (withCounts) {
+            try {
+                const rows = await db
+                    .select({
+                        id: polls.id,
+                        title: polls.title,
+                        description: polls.description,
+                        status: polls.status,
+                        allowIfNeeded: polls.allowIfNeeded,
+                        submissionCount: sql<number>`count(${submissions.id})`,
+                    })
+                    .from(polls)
+                    .leftJoin(submissions, eq(submissions.poll_id, polls.id))
+                    .groupBy(polls.id);
+                return c.json(rows, 200 as const);
+            } catch (err) {
+                console.error('Error fetching polls with counts:', err);
+                return c.json({ msg: 'Something went wrong' }, 500 as const);
+            }
+        }
 
         // Composed detail: one round-trip returns the poll with its questions and
         // its submissions (each with their responses), joined server-side.

@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import UserList from '../components/UserList';
 import User from '../services/users';
 import { useAuth } from '../auth';
+import { User as UserType } from '../types';
 
 export const Route = createFileRoute('/_auth/users')({
     component: UserManagement,
@@ -10,28 +11,24 @@ export const Route = createFileRoute('/_auth/users')({
 
 function UserManagement() {
   const { user } = useAuth();
-  const [localUsers, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    User.list().then(res => {
-      setUsers(res);
-      setLoading(false);
-    }).catch(err => {
-      console.error('Error fetching users:', err);
-      setLoading(false);
-    });
-  }, []);
+  const { data: localUsers = [], isLoading } = useQuery<UserType[]>({
+    queryKey: ['users'],
+    queryFn: User.list,
+  });
 
   async function handleToggleRole(userId: string, nextIsAdmin: boolean) {
-    // optimistic update
-    setUsers(prev => prev.map(u => (u.id === userId ? { ...u, isAdmin: nextIsAdmin } : u)));
+    // optimistically update the cached list
+    queryClient.setQueryData<UserType[]>(['users'], (old = []) =>
+      old.map((u) => (u.id === userId ? { ...u, isAdmin: nextIsAdmin } : u)),
+    );
     try {
       await User.update(userId, { isAdmin: nextIsAdmin });
     } catch (err) {
       console.error('Error updating user role:', err);
-      // revert on failure
-      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, isAdmin: !nextIsAdmin } : u)));
+      // roll back to the server's truth
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     }
   }
 
@@ -45,14 +42,14 @@ function UserManagement() {
           </p>
         </div>
       </div>
-      {!loading && (
+      {!isLoading && (
         <UserList
           users={localUsers}
           currentUserId={user?.id}
           onToggleRole={handleToggleRole}
         />
       )}
-      {loading && <p>Loading users...</p>}
+      {isLoading && <p>Loading users...</p>}
     </div>
   );
-} 
+}

@@ -3,7 +3,7 @@ import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Poll } from '../types';
 
 export default function PollCard({ poll }: { poll: Poll }) {
-    let submissions: number = poll?.submissions?.length || 0;
+    const submissions: number = poll?.submissionCount ?? poll?.submissions?.length ?? 0;
     const submissionText = submissions === 1 ? 'submission' : 'submissions';
 
     return (
