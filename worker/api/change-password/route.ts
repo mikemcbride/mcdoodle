@@ -1,6 +1,7 @@
-// incoming request must have one of the following:
-// 1. x-mcdoodle-api-key header with the correct value
-// 2. a token parameter in the body that matches a verification record id and the email matches the email on the verification record
+// incoming request must include a `token` in the body that matches an active
+// verification record id whose email matches the email in the body.
+// (used by the forgot-password / reset flow.) the logged-in "change password"
+// flow goes through PUT /api/users instead, which verifies the current password.
 
 import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
@@ -35,7 +36,6 @@ export async function handleChangePassword(c: HandlerContext, env: Env) {
     }
 
     const body = await c.req.json();
-    const apiKey = c.req.header('x-mcdoodle-api-key');
     const db = getDb(env.DB);
     const PASSWORD_SALT = env.PASSWORD_SALT;
     
@@ -53,13 +53,6 @@ export async function handleChangePassword(c: HandlerContext, env: Env) {
         try {
             await updatePassword(db, verification.email, body.password, PASSWORD_SALT);
             await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, body.token));
-        } catch (e) {
-            console.error('Error updating password:', e);
-            return c.json({ message: 'Error updating password' }, 500);
-        }
-    } else if (apiKey === env.API_SECRET) {
-        try {
-            await updatePassword(db, body.email, body.password, PASSWORD_SALT);
         } catch (e) {
             console.error('Error updating password:', e);
             return c.json({ message: 'Error updating password' }, 500);
