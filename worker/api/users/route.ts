@@ -111,9 +111,11 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             const user = Array.isArray(response) ? response[0] : response;
 
             // send email verification here
-            let [verificationRecord] = await db.insert(verifications).values({
+            const [verificationRecord] = await db.insert(verifications).values({
                 email: user.email,
-                status: 'active'
+                status: 'active',
+                purpose: 'verify',
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
             }).returning();
 
             const resend = new Resend(env.RESEND_API_KEY);

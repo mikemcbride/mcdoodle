@@ -45,6 +45,8 @@ export type Verification = {
   id: string;
   email: string;
   status: VerificationStatus;
+  purpose?: 'verify' | 'reset' | null;
+  expiresAt?: string | null;
   createdAt: string;
 }
 

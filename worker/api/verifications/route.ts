@@ -10,7 +10,13 @@ export async function getVerification(db: any, id: string) {
         if (Array.isArray(data) && data.length === 0) {
             return { status: 404, data: { msg: 'Not found' } };
         } else if (Array.isArray(data) && data.length === 1) {
-            return { status: 200, data: data[0] };
+            const record = data[0];
+            // lazily expire tokens that are past their expiry so the UI reflects it
+            if (record.status === 'active' && record.expiresAt && new Date(record.expiresAt).getTime() < Date.now()) {
+                await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, id));
+                record.status = 'expired';
+            }
+            return { status: 200, data: record };
         }
         return { status: 200, data };
     } catch (err) {
@@ -40,6 +46,15 @@ export async function processVerification(db: any, id: string, email: string, ac
         // if the verification record is inactive, bail
         if (record.status !== 'active') {
             return { status: 401, data: { msg: `Verification not active. Status: ${record.status}` } };
+        }
+        // expired tokens are not valid
+        if (record.expiresAt && new Date(record.expiresAt).getTime() < Date.now()) {
+            await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, record.id));
+            return { status: 401, data: { msg: 'Verification token has expired.' } };
+        }
+        // a token issued for password reset cannot be used to verify an email
+        if (record.purpose && record.purpose !== 'verify') {
+            return { status: 401, data: { msg: 'Invalid verification token.' } };
         }
         // process the verification
         if (action === 'reject') {

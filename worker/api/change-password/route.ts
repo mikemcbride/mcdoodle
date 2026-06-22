@@ -24,10 +24,14 @@ export async function handleChangePassword(c: HandlerContext, env: Env) {
     
     if (body.token) {
         const [verification] = await db.select().from(verifications).where(eq(verifications.id, body.token));
-        console.log('verification:', verification);
-        
-        if (verification.status !== 'active') {
+
+        if (!verification || verification.status !== 'active') {
             return c.json({ message: 'expired verification token' }, 401);
+        } else if (verification.expiresAt && new Date(verification.expiresAt).getTime() < Date.now()) {
+            await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, body.token));
+            return c.json({ message: 'expired verification token' }, 401);
+        } else if (verification.purpose && verification.purpose !== 'reset') {
+            return c.json({ message: 'invalid verification token' }, 401);
         } else if (verification.email !== body.email) {
             await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, body.token));
             return c.json({ message: 'emails to not match, expiring verification token.' }, 401);

@@ -25,9 +25,11 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
     }
 
     // 3. if both conditions are met, generate a token (new DB table) tied to their email.
-    let [verificationRecord] = await db.insert(verifications).values({
+    const [verificationRecord] = await db.insert(verifications).values({
         email: body.email,
-        status: 'active'
+        status: 'active',
+        purpose: 'reset',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
     }).returning();
 
     // 4. Send an email with a URL that includes the token (we'll verify on the page they land on in the UI)
