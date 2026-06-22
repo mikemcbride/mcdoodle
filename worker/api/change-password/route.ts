@@ -7,27 +7,11 @@ import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
-import { scrypt } from '@noble/hashes/scrypt.js';
+import { hashPassword } from '../../password.js';
 import type { HandlerContext, Env } from '../../types.js';
 
-// Helper function to match scryptSync API from node:crypto
-// Returns hex string directly (Cloudflare Workers compatible)
-function scryptSync(password: string, salt: string, keylen: number): { toString(encoding: 'hex'): string } {
-    // scrypt parameters: N=16384, r=8, p=1 are common defaults
-    // These match Node.js scryptSync defaults
-    const result = scrypt(password, salt, { N: 16384, r: 8, p: 1, dkLen: keylen });
-    // Convert Uint8Array to hex string
-    const hex = Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('');
-    return {
-        toString(_encoding: 'hex'): string {
-            return hex;
-        }
-    };
-}
-
-function updatePassword(db: any, email: string, password: string, salt: string) {
-    const saltedAndHashed = scryptSync(password, salt, 64).toString('hex');
-    return db.update(users).set({ password: saltedAndHashed }).where(eq(users.email, email));
+function updatePassword(db: any, email: string, password: string) {
+    return db.update(users).set({ password: hashPassword(password) }).where(eq(users.email, email));
 }
 
 export async function handleChangePassword(c: HandlerContext, env: Env) {
@@ -37,7 +21,6 @@ export async function handleChangePassword(c: HandlerContext, env: Env) {
 
     const body = await c.req.json();
     const db = getDb(env.DB);
-    const PASSWORD_SALT = env.PASSWORD_SALT;
     
     if (body.token) {
         const [verification] = await db.select().from(verifications).where(eq(verifications.id, body.token));
@@ -51,7 +34,7 @@ export async function handleChangePassword(c: HandlerContext, env: Env) {
         }
         
         try {
-            await updatePassword(db, verification.email, body.password, PASSWORD_SALT);
+            await updatePassword(db, verification.email, body.password);
             await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, body.token));
         } catch (e) {
             console.error('Error updating password:', e);

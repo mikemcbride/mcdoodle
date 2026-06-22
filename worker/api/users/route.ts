@@ -2,28 +2,9 @@ import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
-import { scrypt } from '@noble/hashes/scrypt.js';
+import { hashPassword, verifyPassword } from '../../password.js';
 import type { HandlerContext, Env } from '../../types.js';
 import { Resend } from 'resend';
-
-// Helper function to match scryptSync API from node:crypto
-// Returns hex string directly (Cloudflare Workers compatible)
-function scryptSync(password: string, salt: string, keylen: number): { toString(encoding: 'hex'): string } {
-    // scrypt parameters: N=16384, r=8, p=1 are common defaults
-    // These match Node.js scryptSync defaults
-    const result = scrypt(password, salt, { N: 16384, r: 8, p: 1, dkLen: keylen });
-    // Convert Uint8Array to hex string
-    const hex = Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('');
-    return {
-        toString(_encoding: 'hex'): string {
-            return hex;
-        }
-    };
-}
-
-function saltAndHashPassword(password: string, salt: string) {
-    return scryptSync(password, salt, 64).toString('hex');
-}
 
 export async function handleUsers(c: HandlerContext, env: Env) {
     const db = getDb(env.DB);
@@ -82,13 +63,13 @@ export async function handleUsers(c: HandlerContext, env: Env) {
                     return c.json({ msg: 'Unauthorized' }, 401);
                 }
                 const [dbUser] = await db.select().from(users).where(eq(users.id, sessionUser.id)).limit(1);
-                const saltedAndHashed = saltAndHashPassword(data.currentPassword, PASSWORD_SALT);
+                const check = dbUser ? verifyPassword(data.currentPassword, dbUser.password, PASSWORD_SALT) : { valid: false };
                 // check if the current password is correct
-                if (!dbUser || saltedAndHashed !== dbUser.password) {
+                if (!check.valid) {
                     return c.json({ msg: 'Incorrect password' }, 401);
                 }
                 // if it is correct, hash the new password and set it.
-                data.password = saltAndHashPassword(data.newPassword, PASSWORD_SALT);
+                data.password = hashPassword(data.newPassword);
             }
 
             // remove the currentPassword and newPassword from the data
@@ -115,7 +96,7 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             const data = await c.req.json();
 
             if (data.password) {
-                data.password = saltAndHashPassword(data.password, PASSWORD_SALT);
+                data.password = hashPassword(data.password);
             } else {
                 return c.json({ msg: 'Password is required' }, 400);
             }
