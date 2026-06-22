@@ -9,6 +9,8 @@
 		"dev:emails": "email dev",
 		"build": "tsc -b && vite build",
 		"lint": "eslint .",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"preview": "pnpm run build && vite preview",
 		"deploy": "pnpm run build && wrangler deploy",
 		"cf-typegen": "wrangler types",
@@ -57,9 +59,11 @@
 		"eslint-plugin-react-hooks": "^5.2.0",
 		"eslint-plugin-react-refresh": "^0.4.19",
 		"globals": "^16.0.0",
+		"miniflare": "^4.20260617.1",
 		"typescript": "~5.7.2",
 		"typescript-eslint": "^8.26.1",
 		"vite": "^8.0.16",
+		"vitest": "^4",
 		"wrangler": "^4.103.0"
 	},
 	"packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
