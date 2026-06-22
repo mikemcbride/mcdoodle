@@ -3,6 +3,7 @@ import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
 import { Resend } from 'resend';
+import { forgotPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function handleForgotPassword(c: HandlerContext, env: Env): Promise<Response> {
@@ -10,23 +11,22 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
         return c.json({ error: 'Method not allowed' }, 405);
     }
 
-    const body = await c.req.json();
-    
-    // 1. check for email in the request body. if not exists, return error.
-    if (!body.email) {
+    const parsed = forgotPasswordSchema.safeParse(await c.req.json());
+    if (!parsed.success) {
         return c.json({ error: 'Email is required' }, 400);
     }
+    const { email } = parsed.data;
 
     const db = getDb(env.DB);
-    // 2. check if the email exists in the database. if not, return error.
-    let userRes = await db.select().from(users).where(eq(users.email, body.email));
+    // check if the email exists in the database. if not, return error.
+    const userRes = await db.select().from(users).where(eq(users.email, email));
     if (userRes.length === 0) {
         return c.json({ error: 'User not found' }, 400);
     }
 
-    // 3. if both conditions are met, generate a token (new DB table) tied to their email.
+    // generate a token tied to their email.
     const [verificationRecord] = await db.insert(verifications).values({
-        email: body.email,
+        email: email,
         status: 'active',
         purpose: 'reset',
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour

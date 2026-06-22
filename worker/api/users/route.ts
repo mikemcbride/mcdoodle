@@ -3,6 +3,7 @@ import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword, verifyPassword } from '../../password.js';
+import { registerSchema, updateProfileSchema, changeOwnPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 import { Resend } from 'resend';
 
@@ -44,7 +45,10 @@ export async function handleUsers(c: HandlerContext, env: Env) {
         // Admins may update any user; everyone else may only update themselves.
         try {
             const body = await c.req.json();
-            const { id, ...data } = body;
+            const id = typeof body?.id === 'string' ? body.id : null;
+            if (!id) {
+                return c.json({ msg: 'User id is required' }, 400);
+            }
 
             const sessionUser = c.get('user');
             if (!sessionUser) {
@@ -52,31 +56,49 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             }
             const isAdmin = sessionUser.isAdmin || false;
             const isCallingUser = sessionUser.id === id;
-
             if (!isAdmin && !isCallingUser) {
                 return c.json({ msg: 'Unauthorized' }, 401);
             }
 
-            if (data.currentPassword && data.newPassword) {
-                // A password change is only ever allowed on your own account.
+            // Build a whitelisted update payload — never spread the raw body.
+            const updates: { email?: string; firstName?: string; lastName?: string; isAdmin?: boolean; isVerified?: boolean; password?: string } = {};
+
+            const profile = updateProfileSchema.safeParse(body);
+            if (!profile.success) {
+                return c.json({ msg: 'Invalid request', errors: profile.error.flatten().fieldErrors }, 400);
+            }
+            if (profile.data.email !== undefined) updates.email = profile.data.email;
+            if (profile.data.firstName !== undefined) updates.firstName = profile.data.firstName;
+            if (profile.data.lastName !== undefined) updates.lastName = profile.data.lastName;
+
+            // Role / verification changes are admin-only (closes self-promotion).
+            if (isAdmin) {
+                if (typeof body.isAdmin === 'boolean') updates.isAdmin = body.isAdmin;
+                if (typeof body.isVerified === 'boolean') updates.isVerified = body.isVerified;
+            }
+
+            // A password change is only ever allowed on your own account.
+            if (body.currentPassword !== undefined || body.newPassword !== undefined) {
                 if (!isCallingUser) {
                     return c.json({ msg: 'Unauthorized' }, 401);
                 }
+                const pw = changeOwnPasswordSchema.safeParse(body);
+                if (!pw.success) {
+                    return c.json({ msg: 'Invalid request', errors: pw.error.flatten().fieldErrors }, 400);
+                }
                 const [dbUser] = await db.select().from(users).where(eq(users.id, sessionUser.id)).limit(1);
-                const check = dbUser ? verifyPassword(data.currentPassword, dbUser.password, PASSWORD_SALT) : { valid: false };
-                // check if the current password is correct
+                const check = dbUser ? verifyPassword(pw.data.currentPassword, dbUser.password, PASSWORD_SALT) : { valid: false };
                 if (!check.valid) {
                     return c.json({ msg: 'Incorrect password' }, 401);
                 }
-                // if it is correct, hash the new password and set it.
-                data.password = hashPassword(data.newPassword);
+                updates.password = hashPassword(pw.data.newPassword);
             }
 
-            // remove the currentPassword and newPassword from the data
-            delete data.currentPassword;
-            delete data.newPassword;
+            if (Object.keys(updates).length === 0) {
+                return c.json({ msg: 'No valid fields to update' }, 400);
+            }
 
-            const response = await db.update(users).set(data).where(eq(users.id, id)).returning();
+            const response = await db.update(users).set(updates).where(eq(users.id, id)).returning();
             const updatedUser = Array.isArray(response) ? response[0] : response;
 
             // never return the password hash to the client
@@ -93,17 +115,22 @@ export async function handleUsers(c: HandlerContext, env: Env) {
 
     if (method === 'POST') {
         try {
-            const data = await c.req.json();
-
-            if (data.password) {
-                data.password = hashPassword(data.password);
-            } else {
-                return c.json({ msg: 'Password is required' }, 400);
+            const parsed = registerSchema.safeParse(await c.req.json());
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid request', errors: parsed.error.flatten().fieldErrors }, 400);
             }
+            const input = parsed.data;
+            // whitelist: never accept isAdmin/isVerified (or anything else) at signup
+            const newUser = {
+                email: input.email,
+                password: hashPassword(input.password),
+                firstName: input.firstName ?? null,
+                lastName: input.lastName ?? null,
+            };
 
             let response;
             try {
-                response = await db.insert(users).values(data).returning();
+                response = await db.insert(users).values(newUser).returning();
             } catch (err) {
                 console.error('caught error:', err);
                 return c.json({ msg: 'Email already exists.' }, 409);
@@ -141,6 +168,9 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             }),
             });
 
+            if (user) {
+                delete (user as { password?: string }).password;
+            }
             return c.json(user, 200);
         } catch (err) {
             console.error(err);

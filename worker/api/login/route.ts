@@ -3,6 +3,7 @@ import { users } from '../../../db/schema/users.js';
 import { eq } from 'drizzle-orm';
 import { createSession, setSessionCookie } from '../../auth.js';
 import { verifyPassword, hashPassword } from '../../password.js';
+import { loginSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function handleLogin(c: HandlerContext, env: Env) {
@@ -11,12 +12,11 @@ export async function handleLogin(c: HandlerContext, env: Env) {
     }
 
     try {
-        const body = await c.req.json();
-        const { email, password } = body;
-        
-        if (!email || !password) {
+        const parsed = loginSchema.safeParse(await c.req.json());
+        if (!parsed.success) {
             return c.json({ error: 'Email and password are required' }, 400);
         }
+        const { email, password } = parsed.data;
 
         const PASSWORD_SALT = env.PASSWORD_SALT;
         if (!PASSWORD_SALT) {

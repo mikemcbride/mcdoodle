@@ -2,6 +2,8 @@ import { getDb } from '../../../db/index.js';
 import { submissions } from '../../../db/schema/submissions.js';
 import { polls } from '../../../db/schema/polls.js';
 import { eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { submissionCreateSchema, submissionUpdateSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function getSubmissions(db: any, opts: { id?: string; poll_id?: string } = {}) {
@@ -42,28 +44,18 @@ export async function handleSubmissions(c: HandlerContext, env: Env) {
 
     if (method === 'POST') {
         try {
-            const data = await c.req.json();
-            
-            // Handle both single object and array of objects
-            const isArray = Array.isArray(data);
-            const valuesToInsert = isArray ? data : [data];
-            
-            // Validate array is not empty
+            const body = await c.req.json();
+            const isArray = Array.isArray(body);
+            const parsed = z.array(submissionCreateSchema).safeParse(isArray ? body : [body]);
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid submissions', errors: parsed.error.flatten() }, 400);
+            }
+            const valuesToInsert = parsed.data;
+
             if (valuesToInsert.length === 0) {
                 return c.json({ msg: 'No submissions provided' }, 400);
             }
-            
-            // Validate required fields
-            for (let i = 0; i < valuesToInsert.length; i++) {
-                const item = valuesToInsert[i];
-                if (!item.person || typeof item.person !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'person' field at index ${i}`, index: i }, 400);
-                }
-                if (!item.poll_id || typeof item.poll_id !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'poll_id' field at index ${i}`, index: i }, 400);
-                }
-            }
-            
+
             // Reject submissions to closed polls.
             const pollIds = [...new Set(valuesToInsert.map((it) => it.poll_id))];
             const pollRows = await db.select().from(polls).where(inArray(polls.id, pollIds));
@@ -113,27 +105,18 @@ export async function handleSubmissions(c: HandlerContext, env: Env) {
     if (method === 'PUT') {
         try {
             const body = await c.req.json();
-            let response = null;
-            
-            if (Array.isArray(body)) {
-                const promises = body.map(it => {
-                    const { id, ...data } = it;
-                    return db.update(submissions).set(data).where(eq(submissions.id, id)).returning();
-                });
-                response = await Promise.all(promises);
-                // Flatten the array of arrays if needed
-                if (response.every(Array.isArray)) {
-                    response = response.flat();
-                }
-            } else {
-                const { id, ...data } = body;
-                response = await db.update(submissions).set(data).where(eq(submissions.id, id)).returning();
-                if (Array.isArray(response) && response.length === 1) {
-                    response = response[0];
-                }
+            const isArray = Array.isArray(body);
+            const parsed = z.array(submissionUpdateSchema).safeParse(isArray ? body : [body]);
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid submissions', errors: parsed.error.flatten() }, 400);
             }
-            
-            return c.json(response, 200);
+            const results = await Promise.all(
+                parsed.data.map(({ id, ...data }) =>
+                    db.update(submissions).set(data).where(eq(submissions.id, id)).returning()
+                )
+            );
+            const flat = results.flat();
+            return c.json(isArray ? flat : flat[0], 200);
         } catch (err) {
             console.error(err);
             return c.json({ msg: 'Something went wrong' }, 500);

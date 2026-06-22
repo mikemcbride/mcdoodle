@@ -4,6 +4,7 @@ import { questions } from '../../../db/schema/questions.js';
 import { submissions } from '../../../db/schema/submissions.js';
 import { responses } from '../../../db/schema/responses.js';
 import { eq, sql } from 'drizzle-orm';
+import { createPollSchema, updatePollStatusSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function handlePolls(c: HandlerContext, env: Env) {
@@ -91,27 +92,11 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         }
         
         try {
-            const data = await c.req.json();
-            
-            // Validate required fields
-            if (!data.title) {
-                return c.json({ msg: 'Title is required' }, 400);
+            const parsed = createPollSchema.safeParse(await c.req.json());
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid request', errors: parsed.error.flatten().fieldErrors }, 400);
             }
-            
-            // Ensure description is not null (can be empty string)
-            if (data.description === null || data.description === undefined) {
-                data.description = '';
-            }
-            
-            // Ensure status has a default
-            if (!data.status) {
-                data.status = 'open';
-            }
-            
-            // in drizzle, multiple insert and single insert use the same mechanism.
-            // if `data` is an array, it will insert multiple.
-            let response: any = await db.insert(polls).values(data).returning();
-            // if we only inserted one row, we don't need to return an array.
+            const response = await db.insert(polls).values(parsed.data).returning();
             const result = Array.isArray(response) && response.length === 1 ? response[0] : response;
             
             return c.json(result, 200);
@@ -129,15 +114,11 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         }
 
         try {
-            const body = await c.req.json();
-            const { id, status } = body;
-
-            if (!id) {
-                return c.json({ msg: 'Poll id is required' }, 400);
+            const parsed = updatePollStatusSchema.safeParse(await c.req.json());
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid request', errors: parsed.error.flatten().fieldErrors }, 400);
             }
-            if (status !== 'open' && status !== 'closed') {
-                return c.json({ msg: "status must be 'open' or 'closed'" }, 400);
-            }
+            const { id, status } = parsed.data;
 
             const response = await db.update(polls).set({ status }).where(eq(polls.id, id)).returning();
             const result = Array.isArray(response) && response.length === 1 ? response[0] : response;

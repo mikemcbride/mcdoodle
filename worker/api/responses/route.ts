@@ -1,6 +1,8 @@
 import { getDb } from '../../../db/index.js';
 import { responses } from '../../../db/schema/responses.js';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { responseCreateSchema, responseUpdateSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function getResponses(db: any, opts: { id?: string; poll_id?: string } = {}) {
@@ -41,35 +43,17 @@ export async function handleResponses(c: HandlerContext, env: Env) {
 
     if (method === 'POST') {
         try {
-            const data = await c.req.json();
-            
-            // Handle both single object and array of objects
-            const isArray = Array.isArray(data);
-            const valuesToInsert = isArray ? data : [data];
-            
-            // Validate array is not empty
+            const body = await c.req.json();
+            const isArray = Array.isArray(body);
+            const parsed = z.array(responseCreateSchema).safeParse(isArray ? body : [body]);
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid responses', errors: parsed.error.flatten() }, 400);
+            }
+            const valuesToInsert = parsed.data;
+
             if (valuesToInsert.length === 0) {
                 return c.json({ msg: 'No responses provided' }, 400);
             }
-            
-            // Validate required fields
-            for (let i = 0; i < valuesToInsert.length; i++) {
-                const item = valuesToInsert[i];
-                if (!item.value || typeof item.value !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'value' field at index ${i}`, index: i }, 400);
-                }
-                if (!item.question_id || typeof item.question_id !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'question_id' field at index ${i}`, index: i }, 400);
-                }
-                if (!item.submission_id || typeof item.submission_id !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'submission_id' field at index ${i}`, index: i }, 400);
-                }
-                if (!item.poll_id || typeof item.poll_id !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'poll_id' field at index ${i}`, index: i }, 400);
-                }
-            }
-            
-            console.log(`Inserting ${valuesToInsert.length} responses`);
             
             // SQLite/D1 has a limit on the number of variables in a single statement
             // Batch inserts to avoid "too many variables" error
@@ -110,27 +94,18 @@ export async function handleResponses(c: HandlerContext, env: Env) {
     if (method === 'PUT') {
         try {
             const body = await c.req.json();
-            let response = null;
-            
-            if (Array.isArray(body)) {
-                console.log('update many responses', body);
-                const promises = body.map(it => {
-                    const { id, ...data } = it;
-                    return db.update(responses).set(data).where(eq(responses.id, id)).returning();
-                });
-                response = await Promise.all(promises);
-                console.log('response from updateMany', response); // I suspect this will be an array of arrays, we will need to flatten
-                response = response.flat(1);
-                console.log('flattened response', response);
-            } else {
-                const { id, ...data } = body;
-                response = await db.update(responses).set(data).where(eq(responses.id, id)).returning();
-                if (Array.isArray(response) && response.length === 1) {
-                    response = response[0];
-                }
+            const isArray = Array.isArray(body);
+            const parsed = z.array(responseUpdateSchema).safeParse(isArray ? body : [body]);
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid responses', errors: parsed.error.flatten() }, 400);
             }
-            
-            return c.json(response, 200);
+            const results = await Promise.all(
+                parsed.data.map(({ id, ...data }) =>
+                    db.update(responses).set(data).where(eq(responses.id, id)).returning()
+                )
+            );
+            const flat = results.flat();
+            return c.json(isArray ? flat : flat[0], 200);
         } catch (err) {
             console.error(err);
             return c.json({ msg: 'Something went wrong' }, 500);

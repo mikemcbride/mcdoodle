@@ -1,6 +1,8 @@
 import { getDb } from '../../../db/index.js';
 import { questions } from '../../../db/schema/questions.js';
 import { eq } from 'drizzle-orm';
+import { z } from 'zod';
+import { questionCreateSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function getQuestions(db: any, opts: { id?: string; poll_id?: string } = {}) {
@@ -41,31 +43,18 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
 
     if (method === 'POST') {
         try {
-            const data = await c.req.json();
-            
-            // Handle both single object and array of objects
-            const isArray = Array.isArray(data);
-            const valuesToInsert = isArray ? data : [data];
-            
-            // Validate array is not empty
+            const body = await c.req.json();
+            const isArray = Array.isArray(body);
+            const parsed = z.array(questionCreateSchema).safeParse(isArray ? body : [body]);
+            if (!parsed.success) {
+                return c.json({ msg: 'Invalid questions', errors: parsed.error.flatten() }, 400);
+            }
+            const valuesToInsert = parsed.data;
+
             if (valuesToInsert.length === 0) {
                 return c.json({ msg: 'No questions provided' }, 400);
             }
-            
-            // Ensure all required fields are present
-            for (let i = 0; i < valuesToInsert.length; i++) {
-                const item = valuesToInsert[i];
-                if (!item.value || typeof item.value !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'value' field at index ${i}`, index: i }, 400);
-                }
-                if (!item.poll_id || typeof item.poll_id !== 'string') {
-                    return c.json({ msg: `Missing or invalid 'poll_id' field at index ${i}`, index: i }, 400);
-                }
-                if (item.order === undefined || item.order === null || typeof item.order !== 'number') {
-                    return c.json({ msg: `Missing or invalid 'order' field at index ${i}. Must be a number.`, index: i }, 400);
-                }
-            }
-            
+
             console.log(`Inserting ${valuesToInsert.length} questions`);
             
             // SQLite/D1 has a limit on the number of variables in a single statement
