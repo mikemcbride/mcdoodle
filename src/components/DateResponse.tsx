@@ -5,7 +5,7 @@ import { addDays } from 'date-fns/addDays';
 import { RadioGroup, Label, Radio } from '@headlessui/react';
 import { ResponseOption, Vote } from '../types';
 
-export default function DateResponse({ vote, handleVote }: { vote: Vote, handleVote: (vote: Vote) => void }) {
+export default function DateResponse({ vote, handleVote, allowIfNeeded = true }: { vote: Vote, handleVote: (vote: Vote) => void, allowIfNeeded?: boolean }) {
   const [answer, setAnswer] = useState(vote.response)
   const formattedDate = format(addDays(new Date(vote.date), 1), 'E, MMM do')
 
@@ -21,13 +21,15 @@ export default function DateResponse({ vote, handleVote }: { vote: Vote, handleV
         <div className="flex items-center">
           <RadioGroup value={answer} onChange={handleAnswerChange} className="mt-4 sm:mt-0">
             <Label className="sr-only">Choose an option</Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={clsx('grid gap-3', allowIfNeeded ? 'grid-cols-3' : 'grid-cols-2')}>
               <Radio value="yes" className={({ focus, checked }) => clsx(focus ? 'ring-2 ring-offset-2 ring-emerald-500' : '', checked ? 'bg-emerald-100 border-transparent text-emerald-700 hover:bg-emerald-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none')}>
                 <Label as="span">Yes</Label>
               </Radio>
-              <Radio value="if_needed" className={({ focus, checked }) => clsx(focus ? 'ring-2 ring-offset-2 ring-yellow-500' : '', checked ? 'bg-yellow-100 border-transparent text-yellow-700 hover:bg-yellow-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none')}>
-                <Label as="span">If Needed</Label>
-              </Radio>
+              {allowIfNeeded && (
+                <Radio value="if_needed" className={({ focus, checked }) => clsx(focus ? 'ring-2 ring-offset-2 ring-yellow-500' : '', checked ? 'bg-yellow-100 border-transparent text-yellow-700 hover:bg-yellow-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none')}>
+                  <Label as="span">If Needed</Label>
+                </Radio>
+              )}
               <Radio value="no" className={({ focus, checked }) => clsx(focus ? 'ring-2 ring-offset-2 ring-red-500' : '', checked ? 'bg-red-100 border-transparent text-red-700 hover:bg-red-200' : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50', 'border rounded-md cursor-pointer py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 focus:outline-none')}>
                 <Label as="span">No</Label>
               </Radio>

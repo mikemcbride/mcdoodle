@@ -159,7 +159,7 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: Pro
             </div>
           </div>
           {votes.map(vote => {
-            return <DateResponse key={vote.question} vote={vote} handleVote={setVote} />
+            return <DateResponse key={vote.question} vote={vote} handleVote={setVote} allowIfNeeded={poll.allowIfNeeded !== false} />
           })}
           {showInvalidMessage &&
             <div className="rounded-md bg-red-50 p-4">

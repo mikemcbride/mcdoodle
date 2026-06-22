@@ -14,6 +14,7 @@ export default function NewPollForm() {
   const [selected, setSelected] = useState<string[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [allowIfNeeded, setAllowIfNeeded] = useState(true)
   const [showSuccess, setShowSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -32,6 +33,7 @@ export default function NewPollForm() {
       title: title,
       description: description || '', // Ensure description is not null
       status: 'open', // new polls will default to being open
+      allowIfNeeded: allowIfNeeded,
     }).then(newPoll => {
       if (!newPoll || !newPoll.id) {
         console.error('Failed to create poll or get poll ID');
@@ -119,6 +121,18 @@ export default function NewPollForm() {
             className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
           />
         </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <input
+          id="allow-if-needed"
+          type="checkbox"
+          checked={allowIfNeeded}
+          onChange={e => setAllowIfNeeded(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label htmlFor="allow-if-needed" className="text-sm font-medium text-gray-700">
+          Allow &ldquo;If Needed&rdquo; as a response option
+        </label>
       </div>
     </section>
     <section className="mt-4 sm:mt-8">

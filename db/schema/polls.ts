@@ -1,4 +1,4 @@
-import { text, sqliteTable } from 'drizzle-orm/sqlite-core';
+import { integer, text, sqliteTable } from 'drizzle-orm/sqlite-core';
 import { createId } from '@paralleldrive/cuid2';
 
 export const polls = sqliteTable('polls', {
@@ -6,4 +6,5 @@ export const polls = sqliteTable('polls', {
   title: text('title').notNull(),
   description: text('description').notNull(),
   status: text('status', { enum: ['open', 'closed'] }).notNull().default('open'),
+  allowIfNeeded: integer('allow_if_needed', { mode: 'boolean' }).notNull().default(true),
 })

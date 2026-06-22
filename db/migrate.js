@@ -18,7 +18,7 @@ const flag = environment === "local" ? "--local" : "--remote";
 
 try {
   console.info(`Applying migrations to ${environment} D1 database...`);
-  execSync(`npx wrangler d1 migrations apply ${databaseName} ${flag} --yes`, {
+  execSync(`npx wrangler d1 migrations apply ${databaseName} ${flag}`, {
     stdio: "inherit",
   });
   console.info("Migrations completed!");

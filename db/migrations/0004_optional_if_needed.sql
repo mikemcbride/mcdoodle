@@ -1,0 +1,1 @@
+ALTER TABLE `polls` ADD `allow_if_needed` integer DEFAULT 1 NOT NULL;
