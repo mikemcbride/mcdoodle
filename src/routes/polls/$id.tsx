@@ -9,6 +9,7 @@ import SubmissionForm from '../../components/SubmissionForm';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import Polls from '../../services/polls';
+import CopyLinkButton from '../../components/CopyLinkButton';
 import { useAuth } from '../../auth';
 import { Poll, Submission } from '../../types';
 
@@ -111,8 +112,13 @@ function RouteComponent() {
         </div>
       </Dialog>
       <Breadcrumbs pages={crumbs} />
-      <h2 className="text-3xl font-black text-gray-900">{poll.title}</h2>
-      <p className="mt-2 text-lg text-gray-700">{poll.description}</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-3xl font-black text-gray-900">{poll.title}</h2>
+          <p className="mt-2 text-lg text-gray-700">{poll.description}</p>
+        </div>
+        <CopyLinkButton url={`${window.location.origin}/polls/${poll.id}`} />
+      </div>
 
       {isClosed && (
         <div className="mt-4 rounded-md bg-yellow-50 p-4">
