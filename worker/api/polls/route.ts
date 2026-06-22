@@ -36,9 +36,9 @@ export async function handlePolls(c: HandlerContext, env: Env) {
     }
 
     if (method === 'POST') {
-        // Check authorization
-        const apiKey = c.req.header('x-mcdoodle-api-key');
-        if (apiKey !== env.API_SECRET) {
+        // Require an authenticated session.
+        const currentUser = c.get('user');
+        if (!currentUser) {
             return c.json({ message: 'unauthorized request' }, 401);
         }
         
@@ -78,9 +78,9 @@ export async function handlePolls(c: HandlerContext, env: Env) {
     }
 
     if (method === 'PUT') {
-        // Check authorization
-        const apiKey = c.req.header('x-mcdoodle-api-key');
-        if (apiKey !== env.API_SECRET) {
+        // Require an authenticated session.
+        const currentUser = c.get('user');
+        if (!currentUser) {
             return c.json({ message: 'unauthorized request' }, 401);
         }
 
@@ -107,9 +107,9 @@ export async function handlePolls(c: HandlerContext, env: Env) {
     }
 
     if (method === 'DELETE') {
-        // Check authorization
-        const apiKey = c.req.header('x-mcdoodle-api-key');
-        if (apiKey !== env.API_SECRET) {
+        // Require an authenticated session.
+        const currentUser = c.get('user');
+        if (!currentUser) {
             return c.json({ message: 'unauthorized request' }, 401);
         }
         

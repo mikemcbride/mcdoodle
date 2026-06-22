@@ -65,7 +65,7 @@ export async function handleLogin(c: HandlerContext, env: Env) {
             // Establish a server-side session and set an HttpOnly cookie.
             const { id: sessionId, expiresAt } = await createSession(env, data[0].id);
             setSessionCookie(c, sessionId, expiresAt);
-            responseData = { ...data[0], apiKey: env.API_SECRET };
+            responseData = { ...data[0] };
         }
 
         // remove the password before sending back

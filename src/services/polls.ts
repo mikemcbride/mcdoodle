@@ -51,12 +51,8 @@ export default class Polls {
     }
 
     static async create(payload: any) {
-        // create and remove require you to be logged in.
-        const user = window.localStorage.getItem('mcdoodle.user')
-        if (!user) return
-        const { apiKey } = JSON.parse(user);
-        if (!apiKey) return
-        const { data } = await http.post('/polls', payload, { headers: { 'x-mcdoodle-api-key': apiKey }})
+        // create requires an authenticated session (enforced server-side via cookie).
+        const { data } = await http.post('/polls', payload)
         if (pollCache) {
             pollCache.push(data)
         } else {
@@ -66,11 +62,8 @@ export default class Polls {
     }
 
     static async setStatus(pollId: string, status: 'open' | 'closed') {
-        const user = window.localStorage.getItem('mcdoodle.user')
-        if (!user) return
-        const { apiKey } = JSON.parse(user);
-        if (!apiKey) return
-        const { data } = await http.put('/polls', { id: pollId, status }, { headers: { 'x-mcdoodle-api-key': apiKey }})
+        // auth is enforced server-side via the session cookie.
+        const { data } = await http.put('/polls', { id: pollId, status })
         if (pollCache) {
             pollCache = pollCache.map(p => p.id === pollId ? { ...p, status } : p)
         }
@@ -78,11 +71,8 @@ export default class Polls {
     }
 
     static async remove(pollId: string) {
-        const user = window.localStorage.getItem('mcdoodle.user')
-        if (!user) return
-        const { apiKey } = JSON.parse(user);
-        if (!apiKey) return
-        const { data } = await http.delete('/polls', { params: { id: pollId }, headers: { 'x-mcdoodle-api-key': apiKey }})
+        // delete requires an authenticated session (enforced server-side via cookie).
+        const { data } = await http.delete('/polls', { params: { id: pollId } })
         if (pollCache) {
             pollCache = pollCache.filter(it => it.id !== pollId)
         }

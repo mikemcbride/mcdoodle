@@ -59,43 +59,49 @@ export async function handleUsers(c: HandlerContext, env: Env) {
     }
 
     if (method === 'PUT') {
-        // check headers for user id
-        // if user id is not the same as the user being updated, check for admin
-        // header is x-mcdoodle-user-id
+        // The caller is identified by their session cookie, never a client header.
+        // Admins may update any user; everyone else may only update themselves.
         try {
             const body = await c.req.json();
             const { id, ...data } = body;
 
-            const userId = c.req.header('x-mcdoodle-user-id');
-            if (!userId) {
+            const sessionUser = c.get('user');
+            if (!sessionUser) {
                 return c.json({ msg: 'Unauthorized' }, 401);
             }
-            const currentUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-            const isAdmin = currentUser[0]?.isAdmin || false;
-            const isCallingUser = currentUser[0]?.id === id;
+            const isAdmin = sessionUser.isAdmin || false;
+            const isCallingUser = sessionUser.id === id;
 
             if (!isAdmin && !isCallingUser) {
                 return c.json({ msg: 'Unauthorized' }, 401);
             }
 
             if (data.currentPassword && data.newPassword) {
+                // A password change is only ever allowed on your own account.
+                if (!isCallingUser) {
+                    return c.json({ msg: 'Unauthorized' }, 401);
+                }
+                const [dbUser] = await db.select().from(users).where(eq(users.id, sessionUser.id)).limit(1);
                 const saltedAndHashed = saltAndHashPassword(data.currentPassword, PASSWORD_SALT);
                 // check if the current password is correct
-                if (saltedAndHashed !== currentUser[0].password) {
-                    // if not, return a 401.
+                if (!dbUser || saltedAndHashed !== dbUser.password) {
                     return c.json({ msg: 'Incorrect password' }, 401);
-                } else {
-                    // if it is correct, hash the new password and set it.
-                    data.password = saltAndHashPassword(data.newPassword, PASSWORD_SALT);
                 }
+                // if it is correct, hash the new password and set it.
+                data.password = saltAndHashPassword(data.newPassword, PASSWORD_SALT);
             }
 
             // remove the currentPassword and newPassword from the data
             delete data.currentPassword;
             delete data.newPassword;
 
-            let response = await db.update(users).set(data).where(eq(users.id, id)).returning();
-            const updatedUser = Array.isArray(response) && response.length === 1 ? response[0] : Array.isArray(response) ? response[0] : response;
+            const response = await db.update(users).set(data).where(eq(users.id, id)).returning();
+            const updatedUser = Array.isArray(response) ? response[0] : response;
+
+            // never return the password hash to the client
+            if (updatedUser) {
+                delete (updatedUser as { password?: string }).password;
+            }
 
             return c.json(updatedUser, 200);
         } catch (err) {
