@@ -65,6 +65,18 @@ export default class Polls {
         return data
     }
 
+    static async setStatus(pollId: string, status: 'open' | 'closed') {
+        const user = window.localStorage.getItem('mcdoodle.user')
+        if (!user) return
+        const { apiKey } = JSON.parse(user);
+        if (!apiKey) return
+        const { data } = await http.put('/polls', { id: pollId, status }, { headers: { 'x-mcdoodle-api-key': apiKey }})
+        if (pollCache) {
+            pollCache = pollCache.map(p => p.id === pollId ? { ...p, status } : p)
+        }
+        return data
+    }
+
     static async remove(pollId: string) {
         const user = window.localStorage.getItem('mcdoodle.user')
         if (!user) return

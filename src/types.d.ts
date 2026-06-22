@@ -48,10 +48,7 @@ export type Verification = {
 }
 
 // Helpers
-export enum PollStatus {
-  OPEN = 'open',
-  CLOSED = 'closed',
-};
+export type PollStatus = 'open' | 'closed';
 
 export enum VerificationStatus {
   ACTIVE = 'active',

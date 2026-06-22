@@ -77,6 +77,35 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         }
     }
 
+    if (method === 'PUT') {
+        // Check authorization
+        const apiKey = c.req.header('x-mcdoodle-api-key');
+        if (apiKey !== env.API_SECRET) {
+            return c.json({ message: 'unauthorized request' }, 401);
+        }
+
+        try {
+            const body = await c.req.json();
+            const { id, status } = body;
+
+            if (!id) {
+                return c.json({ msg: 'Poll id is required' }, 400);
+            }
+            if (status !== 'open' && status !== 'closed') {
+                return c.json({ msg: "status must be 'open' or 'closed'" }, 400);
+            }
+
+            const response = await db.update(polls).set({ status }).where(eq(polls.id, id)).returning();
+            const result = Array.isArray(response) && response.length === 1 ? response[0] : response;
+
+            return c.json(result, 200);
+        } catch (err) {
+            console.error('Error updating poll:', err);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            return c.json({ msg: 'Something went wrong', error: errorMessage }, 500);
+        }
+    }
+
     if (method === 'DELETE') {
         // Check authorization
         const apiKey = c.req.header('x-mcdoodle-api-key');

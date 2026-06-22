@@ -26,6 +26,10 @@ app.post('/api/polls', async (c) => {
 	return handlePolls(c, c.env);
 });
 
+app.put('/api/polls', async (c) => {
+	return handlePolls(c, c.env);
+});
+
 app.delete('/api/polls', async (c) => {
 	return handlePolls(c, c.env);
 });

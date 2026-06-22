@@ -1,6 +1,7 @@
 import { getDb } from '../../../db/index.js';
 import { submissions } from '../../../db/schema/submissions.js';
-import { eq } from 'drizzle-orm';
+import { polls } from '../../../db/schema/polls.js';
+import { eq, inArray } from 'drizzle-orm';
 import type { HandlerContext, Env } from '../../types.js';
 
 export async function getSubmissions(db: any, opts: { id?: string; poll_id?: string } = {}) {
@@ -74,6 +75,14 @@ export async function handleSubmissions(c: HandlerContext, env: Env) {
                 }
             }
             
+            // Reject submissions to closed polls.
+            const pollIds = [...new Set(valuesToInsert.map((it) => it.poll_id))];
+            const pollRows = await db.select().from(polls).where(inArray(polls.id, pollIds));
+            const closedPoll = pollRows.find((p) => p.status === 'closed');
+            if (closedPoll) {
+                return c.json({ msg: 'This poll is closed and is no longer accepting responses.' }, 403);
+            }
+
             console.log(`Inserting ${valuesToInsert.length} submissions`);
             
             // SQLite/D1 has a limit on the number of variables in a single statement

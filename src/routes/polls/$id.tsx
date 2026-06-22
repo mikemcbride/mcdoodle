@@ -88,6 +88,10 @@ function RouteComponent() {
   }
 
   function handleEditSubmission(submission: Submission) {
+    // can't edit responses on a closed poll.
+    if (poll?.status === "closed") {
+      return;
+    }
     // don't allow editing if we're already editing.
     if (submissionToEdit !== null) {
       return;
@@ -104,11 +108,21 @@ function RouteComponent() {
     return <div>Poll not found</div>;
   }
 
+  const isClosed = poll.status === "closed";
+
   return (
     <section>
       <Breadcrumbs pages={crumbs} />
       <h2 className="text-3xl font-black text-gray-900">{poll.title}</h2>
       <p className="mt-2 text-lg text-gray-700">{poll.description}</p>
+
+      {isClosed && (
+        <div className="mt-4 rounded-md bg-gray-50 p-4 ring-1 ring-inset ring-gray-200">
+          <p className="text-sm font-medium text-gray-700">
+            This poll is closed and is no longer accepting responses.
+          </p>
+        </div>
+      )}
 
       {isAddingSubmission && (
         <SubmissionForm 
@@ -121,7 +135,7 @@ function RouteComponent() {
 
       <div className="flex md:items-center justify-between flex-col-reverse md:flex-row mt-8 mb-4 gap-4">
         <h3 className="text-2xl font-bold">Responses</h3>
-        {!isAddingSubmission && (
+        {!isAddingSubmission && !isClosed && (
           <button
             type="button"
             className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full sm:w-auto"
