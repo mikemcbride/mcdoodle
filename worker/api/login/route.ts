@@ -2,6 +2,7 @@ import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { eq } from 'drizzle-orm';
 import { scrypt } from '@noble/hashes/scrypt.js';
+import { createSession, setSessionCookie } from '../../auth.js';
 import type { HandlerContext, Env } from '../../types.js';
 
 // Helper function to match scryptSync API from node:crypto
@@ -61,6 +62,9 @@ export async function handleLogin(c: HandlerContext, env: Env) {
             status = 401;
             responseData = { message: 'Email address is unverified. Please check your email for a verification link.', reason: 'unverified' };
         } else {
+            // Establish a server-side session and set an HttpOnly cookie.
+            const { id: sessionId, expiresAt } = await createSession(env, data[0].id);
+            setSessionCookie(c, sessionId, expiresAt);
             responseData = { ...data[0], apiKey: env.API_SECRET };
         }
 

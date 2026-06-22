@@ -9,9 +9,33 @@ import { handleVerifications } from './api/verifications/route.js';
 import { handleForgotPassword } from './api/forgot-password/route.js';
 import { handleChangePassword } from './api/change-password/route.js';
 import { handleVerifyEmail } from './api/verify-email/route.js';
-import type { Env } from './types';
+import { getSessionUser, destroySession } from './auth.js';
+import type { Env, Variables } from './types';
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// Resolve the current user from the session cookie for all API requests and
+// expose it to handlers via c.get('user').
+app.use('/api/*', async (c, next) => {
+	const user = await getSessionUser(c, c.env);
+	c.set('user', user);
+	await next();
+});
+
+// Returns the currently authenticated user (or 401 if there's no valid session).
+app.get('/api/me', async (c) => {
+	const user = c.get('user');
+	if (!user) {
+		return c.json({ message: 'unauthenticated' }, 401);
+	}
+	return c.json(user, 200);
+});
+
+// Clears the session (deletes the row and the cookie).
+app.post('/api/logout', async (c) => {
+	await destroySession(c, c.env);
+	return c.json({ message: 'ok' }, 200);
+});
 
 // API routes
 app.post('/api/login', async (c) => {
