@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
@@ -8,29 +7,49 @@ import ResponsePill from '../../components/ResponsePill';
 import SubmissionForm from '../../components/SubmissionForm';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
-import Polls from '../../services/polls';
 import CopyLinkButton from '../../components/CopyLinkButton';
+import { getPollServerFn } from '../../server/polls';
 import { useAuth } from '../../auth';
 import { Poll, Submission } from '../../types';
 
 export const Route = createFileRoute('/polls/$id')({
+  // Loads on the server during SSR (in-process D1 read) and as an RPC on
+  // client navigation.
+  loader: async ({ params }) => ({
+    poll: (await getPollServerFn({ data: params.id })) as Poll | null,
+  }),
+  // Server-rendered <title> + OG/Twitter tags so shared poll links unfurl nicely.
+  head: ({ loaderData }) => {
+    const poll = loaderData?.poll;
+    if (!poll) {
+      return { meta: [{ title: 'Poll not found · McDoodle' }] };
+    }
+    const count = poll.submissions?.length ?? 0;
+    const description =
+      poll.description || `${count} response${count === 1 ? '' : 's'} so far`;
+    return {
+      meta: [
+        { title: `${poll.title} · McDoodle` },
+        { name: 'description', content: description },
+        { property: 'og:title', content: poll.title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:title', content: poll.title },
+        { name: 'twitter:description', content: description },
+      ],
+    };
+  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { id } = Route.useParams();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { poll } = Route.useLoaderData();
   const [isAddingSubmission, setIsAddingSubmission] = useState(false);
   const [submissionToEdit, setSubmissionToEdit] = useState<Submission | null>(null);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
-
-  // One composed request returns the poll with its questions and submissions
-  // (each with their responses). React Query handles caching/refetching.
-  const { data: poll, isLoading } = useQuery<Poll | null>({
-    queryKey: ['poll', id],
-    queryFn: () => Polls.findFull(id),
-  });
 
   const questions = _orderBy(poll?.questions ?? [], 'value');
   const submissions = poll?.submissions ?? [];
@@ -41,8 +60,8 @@ function RouteComponent() {
   const pollForForm = poll ? { ...poll, questions } : null;
 
   function handleFormSubmission() {
-    // The mutation already persisted; refetch the composed poll to reflect it.
-    queryClient.invalidateQueries({ queryKey: ['poll', id] });
+    // The mutation already persisted; re-run the loader to reflect it.
+    router.invalidate();
     setSubmissionToEdit(null);
     setIsAddingSubmission(false);
   }
@@ -68,10 +87,6 @@ function RouteComponent() {
     }
     setSubmissionToEdit(submission);
     setIsAddingSubmission(true);
-  }
-
-  if (isLoading) {
-    return <div>Loading poll details...</div>;
   }
 
   if (!poll) {
@@ -117,7 +132,7 @@ function RouteComponent() {
           <h2 className="text-3xl font-black text-gray-900">{poll.title}</h2>
           <p className="mt-2 text-lg text-gray-700">{poll.description}</p>
         </div>
-        <CopyLinkButton url={`${window.location.origin}/polls/${poll.id}`} />
+        <CopyLinkButton url={typeof window !== 'undefined' ? `${window.location.origin}/polls/${poll.id}` : ''} />
       </div>
 
       {isClosed && (
