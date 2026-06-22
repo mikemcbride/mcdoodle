@@ -4,8 +4,8 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "wrangler dev",
-		"dev:vite": "vite",
+		"dev": "vite",
+		"dev:wrangler": "pnpm run build && wrangler dev",
 		"dev:emails": "email dev",
 		"build": "tsc -b && vite build",
 		"lint": "eslint .",
