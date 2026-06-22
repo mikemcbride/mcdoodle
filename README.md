@@ -1,8 +1,20 @@
 # McDoodle
 
 A scheduling/poll app (a Doodle-style "when are you available" tool) built with
-React + TanStack Router/Query on the front end and Hono on Cloudflare Workers,
-backed by Cloudflare D1 (SQLite) via Drizzle.
+**TanStack Start** (SSR) on **Cloudflare Workers**, with **Hono** serving the
+`/api/*` routes inside the same worker, backed by Cloudflare D1 (SQLite) via
+Drizzle.
+
+## Architecture
+
+- **`worker/index.ts`** is the worker entry: a Hono app that owns `/api/*`
+  (session auth, polls, voting, users, email flows) and delegates everything
+  else to TanStack Start's SSR handler.
+- **Pages** are server-rendered by TanStack Start (file routes in `src/routes`).
+  The poll page server-renders real D1 data and per-poll OG/Twitter tags so
+  shared links unfurl nicely.
+- **`src/server/*`** holds TanStack Start server functions (in-process D1 reads
+  used during SSR, e.g. the poll detail and the session lookup).
 
 ## Local development
 
@@ -14,10 +26,9 @@ pnpm db:migrate     # apply D1 migrations to the local database (first run / aft
 pnpm dev            # http://localhost:5173
 ```
 
-`pnpm dev` uses Vite with the Cloudflare plugin, which runs the Worker
-(`worker/index.ts`) **live from source** alongside the React app with HMR, and
-wires up local bindings (D1, etc.). The frontend and the `/api/*` routes are
-served together on the same port.
+`pnpm dev` runs Vite (with the TanStack Start + Cloudflare plugins), which runs
+the Worker (`worker/index.ts`) and SSR **live from source** with HMR, and wires
+up local bindings (D1, etc.). Pages and `/api/*` are served together on one port.
 
 > Note: `pnpm dev` and `pnpm db:migrate` share the same local D1 database under
 > `.wrangler/`. If you change the Drizzle schema, add a migration in
@@ -27,9 +38,9 @@ served together on the same port.
 
 | Script | What it does |
 | --- | --- |
-| `pnpm dev` | Local dev server (Vite + Worker from source, HMR). **Use this.** |
-| `pnpm build` | Type-check and build the client + worker into `dist/`. |
-| `pnpm dev:wrangler` | Build, then run `wrangler dev` against the built output. Useful to sanity-check the production bundle locally. |
+| `pnpm dev` | Local dev server (Vite + Start SSR + Worker from source, HMR). **Use this.** |
+| `pnpm build` | Type-check and build the client + SSR worker into `dist/`. |
+| `pnpm test` | Run the Vitest suite (unit + integration). |
 | `pnpm preview` | Build and preview the production build. |
 | `pnpm deploy` | Build and deploy to Cloudflare Workers. |
 | `pnpm db:migrate` | Apply D1 migrations to the **local** database. |
@@ -37,17 +48,15 @@ served together on the same port.
 | `pnpm dev:emails` | Preview the React Email templates in `emails/`. |
 | `pnpm lint` | Run ESLint. |
 
-> Heads up: `wrangler dev` serves the **built** worker (via the Cloudflare Vite
-> plugin's redirected config in `dist/`), so it needs a build first — that's why
-> `dev:wrangler` builds before running. For day-to-day work, prefer `pnpm dev`.
-
 ## Project layout
 
-- `src/` — React app (TanStack Router file routes in `src/routes`, data hooks/
-  services in `src/services`).
-- `worker/` — Hono API on Cloudflare Workers (`worker/index.ts` wires routes to
-  handlers in `worker/api/*`). Auth/session and password helpers live in
-  `worker/auth.ts` and `worker/password.ts`.
+- `src/routes/` — TanStack Start file routes (SSR). `__root.tsx` is the HTML
+  document shell.
+- `src/server/` — Start server functions (server-only D1 access for SSR).
+- `src/services/` — client-side API calls (axios → the Hono `/api`).
+- `worker/` — worker entry + Hono API. `worker/index.ts` wires routes to handlers
+  in `worker/api/*`; auth/session, password, and Zod schemas live in
+  `worker/auth.ts`, `worker/password.ts`, `worker/schemas.ts`.
 - `db/` — Drizzle schema (`db/schema/*.ts`), migrations (`db/migrations/`), and
   the migrate runner (`db/migrate.js`).
 - `emails/` — React Email templates.

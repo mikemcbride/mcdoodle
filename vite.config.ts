@@ -1,20 +1,14 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
-import { cloudflare } from "@cloudflare/vite-plugin";
-import tailwindcss from '@tailwindcss/vite';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import viteReact from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import { cloudflare } from '@cloudflare/vite-plugin'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    TanStackRouterVite({ target: 'react', autoCodeSplitting: true }),
-    react(),
-    cloudflare(),
+    cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tailwindcss(),
+    tanstackStart(),
+    viteReact(),
   ],
-  build: {
-    commonjsOptions: {
-      include: [/db/, /node_modules/],
-    },
-  },
 })
