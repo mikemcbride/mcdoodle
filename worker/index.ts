@@ -10,9 +10,14 @@ import { handleForgotPassword } from './api/forgot-password/route.js';
 import { handleChangePassword } from './api/change-password/route.js';
 import { handleVerifyEmail } from './api/verify-email/route.js';
 import { getSessionUser, destroySession } from './auth.js';
+import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/server';
 import type { Env, Variables } from './types';
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// TanStack Start SSR handler — renders pages and serves client assets for
+// everything that isn't an /api route.
+const startFetch = createStartHandler(defaultStreamHandler);
 
 // Resolve the current user from the session cookie for all API requests and
 // expose it to handlers via c.get('user').
@@ -118,13 +123,8 @@ app.post('/api/verify-email', async (c) => {
 	return handleVerifyEmail(c, c.env);
 });
 
-// Serve static assets for all non-API routes
-app.all('*', async (c) => {
-	// Check if ASSETS binding is available (may not be in all environments)
-	if (!c.env.ASSETS) {
-		return c.text('Assets not configured', 500);
-	}
-	return c.env.ASSETS.fetch(c.req.raw);
-});
+// Everything that isn't an API route is handled by TanStack Start (SSR pages
+// + client assets).
+app.all('*', (c) => startFetch(c.req.raw));
 
 export default app;

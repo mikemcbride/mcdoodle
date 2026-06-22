@@ -1,7 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "mcdoodle",
-	"main": "@tanstack/react-start/server-entry",
+	"main": "worker/index.ts",
 	"compatibility_date": "2025-09-02",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
