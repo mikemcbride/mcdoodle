@@ -7,4 +7,5 @@ export const polls = sqliteTable('polls', {
   description: text('description').notNull(),
   status: text('status', { enum: ['open', 'closed'] }).notNull().default('open'),
   allowIfNeeded: integer('allow_if_needed', { mode: 'boolean' }).notNull().default(true),
+  createdBy: text('created_by'),
 })

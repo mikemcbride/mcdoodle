@@ -6,6 +6,7 @@ export type Poll = {
   status: PollStatus;
   allowIfNeeded?: boolean;
   submissionCount?: number;
+  createdBy?: string | null;
   submissions?: Submission[];
   questions?: Question[];
 };
