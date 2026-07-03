@@ -7,3 +7,6 @@ export function getDb(d1Database: D1Database) {
   return drizzle(d1Database);
 }
 
+// Handy alias for typing helpers that receive a db instance.
+export type Db = ReturnType<typeof getDb>;
+

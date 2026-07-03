@@ -31,12 +31,10 @@ export async function handleVerifyEmail(c: HandlerContext, env: Env) {
     // check if the verification record exists in the database and process it
     const { data, status } = await processVerification(db, token, email, action);
 
-    if (status === 200) {
-        // we successfully processed our verification record.
-        // if action === verify, we need to update the user record as well
-        const updatedUser = userRes[0];
-        updatedUser.isVerified = true;
-        await db.update(users).set(updatedUser).where(eq(users.id, updatedUser.id));
+    if (status === 200 && action !== 'reject') {
+        // we successfully processed our verification record — flip only the
+        // verified flag (never write the whole user row back).
+        await db.update(users).set({ isVerified: true }).where(eq(users.id, userRes[0].id));
     }
 
     return c.json(data, status as 200 | 400 | 401 | 422 | 500);

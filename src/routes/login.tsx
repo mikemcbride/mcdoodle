@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "../auth";
+import { useAuth } from '../context/AuthContext';
 import LoginForm from "../components/LoginForm.tsx";
 import { AuthUser } from "../types";
 import { z } from "zod";

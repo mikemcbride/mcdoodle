@@ -1,9 +1,9 @@
-import { getDb } from '../../../db/index.js';
+import { getDb, type Db } from '../../../db/index.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
 import type { HandlerContext, Env } from '../../types.js';
 
-export async function getVerification(db: any, id: string) {
+export async function getVerification(db: Db, id: string) {
     // never going to be getting a list of verifications, just one by id.
     const data = await db.select().from(verifications).where(eq(verifications.id, id));
     try {
@@ -25,7 +25,7 @@ export async function getVerification(db: any, id: string) {
     }
 }
 
-export async function processVerification(db: any, id: string, email: string, action: 'verify' | 'reject' = 'verify') {
+export async function processVerification(db: Db, id: string, email: string, action: 'verify' | 'reject' = 'verify') {
     const data = await db.select().from(verifications).where(eq(verifications.id, id));
     let record = null;
     try {
@@ -56,13 +56,15 @@ export async function processVerification(db: any, id: string, email: string, ac
         if (record.purpose && record.purpose !== 'verify') {
             return { status: 401, data: { msg: 'Invalid verification token.' } };
         }
-        // process the verification
-        if (action === 'reject') {
-            record.status = 'rejected';
-        } else {
-            record.status = 'verified';
-        }
-        let [updated] = await db.update(verifications).set(record).where(eq(verifications.id, record.id)).returning();
+        // process the verification — update only the status, never write the
+        // whole record back (that pattern is one refactor away from letting a
+        // request body overwrite arbitrary columns).
+        const nextStatus = action === 'reject' ? 'rejected' : 'verified';
+        const [updated] = await db
+            .update(verifications)
+            .set({ status: nextStatus })
+            .where(eq(verifications.id, record.id))
+            .returning();
         return {
             status: 200,
             data: updated

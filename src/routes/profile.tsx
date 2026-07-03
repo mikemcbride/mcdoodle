@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react';
 import clsx from 'clsx';
-import { useAuth } from '../auth'
+import { useAuth } from '../context/AuthContext';
 import Users from '../services/users.ts';
 import LoginError from '../components/LoginError.tsx';
 import ChangePasswordForm from '../components/ChangePasswordForm.tsx';
@@ -18,6 +18,7 @@ function RouteComponent() {
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
 
   function canSubmit() {
     return firstName && lastName && email && !submitting;
@@ -35,15 +36,21 @@ function RouteComponent() {
       lastName,
     }
 
+    const emailChanged = email !== user?.email
+
     Users.update(user?.id, payload).then(val => {
       setSubmitting(false)
       setShowSuccess(true)
       setErrorMessage('')
+      // Changing the email un-verifies the account server-side and triggers a
+      // verification email to the new address — tell the user about it.
+      setNeedsVerification(emailChanged && val?.isVerified === false)
       updateUser(val)
     }).catch((e) => {
       console.error(e)
       setShowSuccess(false)
-      setErrorMessage('Error updating profile')
+      setNeedsVerification(false)
+      setErrorMessage(e?.response?.data?.msg || 'Error updating profile')
     })
   }
 
@@ -126,6 +133,12 @@ function RouteComponent() {
             {showSuccess && (
               <div className="rounded-md bg-emerald-100 p-4">
                 <h3 className="text-sm font-medium text-emerald-800">Profile updated successfully</h3>
+                {needsVerification && (
+                  <p className="mt-2 text-sm text-emerald-700">
+                    Since you changed your email address, we sent a verification link to the new
+                    address. You&apos;ll need to verify it before your next sign-in.
+                  </p>
+                )}
               </div>
             )}
           </form>

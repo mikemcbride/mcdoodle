@@ -4,11 +4,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogPanel, DialogTitle, Description } from "@headlessui/react";
 import Spinner from "./Spinner.js";
 import Polls from "../services/polls.js";
+import type { Poll } from "../types";
 
 export default function AdminPollCard({
   poll,
 }: {
-  poll: any;
+  poll: Poll;
 }) {
   const queryClient = useQueryClient();
   const submissions = poll.submissionCount ?? poll.submissions?.length ?? 0;

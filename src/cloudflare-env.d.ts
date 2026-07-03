@@ -6,7 +6,6 @@ declare module 'cloudflare:workers' {
   export const env: {
     DB: D1Database
     PASSWORD_SALT: string
-    API_SECRET: string
     RESEND_API_KEY: string
     BASE_URL?: string
   }

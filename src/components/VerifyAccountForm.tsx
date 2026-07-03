@@ -10,8 +10,16 @@ type VerifyAccountFormProps = {
   action?: string;
 };
 
+// Shape returned by GET /api/verifications (error responses carry `msg`).
+type VerificationData = {
+  id: string;
+  email: string;
+  status: string;
+  msg?: string;
+};
+
 export default function VerifyAccountForm({ token, email, action }: VerifyAccountFormProps) {
-  const [verification, setVerification] = useState<any>(null);
+  const [verification, setVerification] = useState<VerificationData | null>(null);
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(true);
@@ -27,7 +35,7 @@ export default function VerifyAccountForm({ token, email, action }: VerifyAccoun
     }
 
     // Fetch verification data
-    http.get(`/verifications?id=${token}`)
+    http.get<VerificationData>(`/verifications?id=${token}`)
       .then(({ data }) => {
         if (data.msg === 'Not found') {
           setError('Not found');

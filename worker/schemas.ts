@@ -46,10 +46,11 @@ export const submissionCreateSchema = z.object({
     poll_id: z.string().min(1),
 });
 
+// Only the display name is updatable — a submission can never be moved to a
+// different poll.
 export const submissionUpdateSchema = z.object({
     id: z.string().min(1),
-    person: z.string().trim().min(1).optional(),
-    poll_id: z.string().min(1).optional(),
+    person: z.string().trim().min(1),
 });
 
 const responseValue = z.enum(['yes', 'no', 'if_needed']);
@@ -61,12 +62,11 @@ export const responseCreateSchema = z.object({
     poll_id: z.string().min(1),
 });
 
+// Only the answer is updatable — a response can never be re-pointed at a
+// different question, submission, or poll.
 export const responseUpdateSchema = z.object({
     id: z.string().min(1),
-    value: responseValue.optional(),
-    question_id: z.string().min(1).optional(),
-    submission_id: z.string().min(1).optional(),
-    poll_id: z.string().min(1).optional(),
+    value: responseValue,
 });
 
 export const questionCreateSchema = z.object({

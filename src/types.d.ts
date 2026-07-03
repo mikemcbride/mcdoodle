@@ -81,6 +81,7 @@ export type ResponseQueryParams = {
 export type AuthUser = {
   id: string;
   isAdmin: boolean;
+  isVerified?: boolean | null;
   email?: string;
   firstName?: string;
   lastName?: string;

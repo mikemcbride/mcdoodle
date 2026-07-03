@@ -4,8 +4,10 @@ import type { users } from '../db/schema/users.js';
 
 export interface Env {
 	DB: D1Database;
+	// legacy global salt — only needed to verify (and rehash) pre-migration
+	// password hashes; can be removed once no `password` values remain without
+	// the `scrypt$` prefix
 	PASSWORD_SALT: string;
-	API_SECRET: string;
 	RESEND_API_KEY: string;
 	BASE_URL?: string;
 }

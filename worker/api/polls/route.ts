@@ -48,9 +48,16 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             }
         }
 
+        // Individual polls are shared by direct link, so fetching one by id is
+        // intentionally public — but there is no anonymous "list everything"
+        // view. Listing happens only through the auth-scoped withCounts branch.
+        if (!id) {
+            return c.json({ msg: 'id is required' }, 400 as const);
+        }
+
         // Composed detail: one round-trip returns the poll with its questions and
         // its submissions (each with their responses), joined server-side.
-        if (id && full) {
+        if (full) {
             try {
                 const [poll] = await db.select().from(polls).where(eq(polls.id, id));
                 if (!poll) {
@@ -72,21 +79,12 @@ export async function handlePolls(c: HandlerContext, env: Env) {
             }
         }
         
-        let q: any = db.select().from(polls);
-        if (id) {
-            q = q.where(eq(polls.id, id));
-        }
-        
         try {
-            const data = await q;
-            // data is an array.
-            // if we asked for a single poll, we should return a single object.
-            if (Array.isArray(data) && data.length === 0 && id) {
+            const [poll] = await db.select().from(polls).where(eq(polls.id, id));
+            if (!poll) {
                 return c.json({ msg: 'Not found' }, 404 as const);
-            } else if (Array.isArray(data) && data.length === 1 && id) {
-                return c.json(data[0], 200 as const);
             }
-            return c.json(data, 200 as const);
+            return c.json(poll, 200 as const);
         } catch (err) {
             console.error('Error fetching polls:', err);
             return c.json({ msg: 'Something went wrong' }, 500 as const);
@@ -158,7 +156,7 @@ export async function handlePolls(c: HandlerContext, env: Env) {
         
         // if we don't get an ID parameter, we can't do anything.
         if (!id) {
-            return c.json({ message: 'bad request. delete must provide an id.' }, 403);
+            return c.json({ message: 'bad request. delete must provide an id.' }, 400);
         }
         
         try {
@@ -170,16 +168,15 @@ export async function handlePolls(c: HandlerContext, env: Env) {
                 return c.json({ message: 'forbidden' }, 403);
             }
 
-            // foreign key constraints:
-            // 1. responses need to be deleted first
-            await db.delete(responses).where(eq(responses.poll_id, id));
-            // 2. submissions and questions can be deleted together
-            await Promise.all([
+            // One atomic batch (single round trip, all-or-nothing) ordered for
+            // the FK constraints: responses first, then submissions/questions,
+            // then the poll itself.
+            await db.batch([
+                db.delete(responses).where(eq(responses.poll_id, id)),
                 db.delete(submissions).where(eq(submissions.poll_id, id)),
                 db.delete(questions).where(eq(questions.poll_id, id)),
+                db.delete(polls).where(eq(polls.id, id)),
             ]);
-            // 3. polls must be deleted last, as all tables have a poll_id
-            await db.delete(polls).where(eq(polls.id, id));
 
             return c.json({
                 message: 'ok',

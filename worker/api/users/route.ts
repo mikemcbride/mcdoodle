@@ -1,11 +1,18 @@
 import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
-import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
+import { getCookie } from 'hono/cookie';
 import { hashPassword, verifyPassword } from '../../password.js';
+import { SESSION_COOKIE, revokeUserSessions } from '../../auth.js';
+import { runInBackground } from '../../background.js';
+import { checkRateLimit, clientIp, tooManyRequests } from '../../rate-limit.js';
+import { createVerification, sendVerifyEmail, baseUrlFrom } from '../../emails.js';
 import { registerSchema, updateProfileSchema, changeOwnPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
-import { Resend } from 'resend';
+
+function isUniqueConstraintError(err: unknown): boolean {
+    return err instanceof Error && err.message.includes('UNIQUE constraint failed');
+}
 
 export async function handleUsers(c: HandlerContext, env: Env) {
     const db = getDb(env.DB);
@@ -13,29 +20,32 @@ export async function handleUsers(c: HandlerContext, env: Env) {
     const PASSWORD_SALT = env.PASSWORD_SALT;
 
     if (method === 'GET') {
+        // The user directory is admin-only: it exposes every account's email,
+        // name, role, and verification status (and allows lookups by email,
+        // which would otherwise enable account enumeration).
+        const sessionUser = c.get('user');
+        if (!sessionUser) {
+            return c.json({ msg: 'Unauthorized' }, 401);
+        }
+        if (!sessionUser.isAdmin) {
+            return c.json({ msg: 'Forbidden' }, 403);
+        }
+
         const email = c.req.query('email');
         const userId = c.req.query('userId');
 
         // allow find by email or user_id
-        let q: any = db.select().from(users);
+        let q = db.select().from(users).$dynamic();
         if (email) {
             q = q.where(eq(users.email, email));
         } else if (userId) {
             q = q.where(eq(users.id, userId));
         }
 
-        let data: any = await q;
+        const rows = await q;
 
-        // remove the password
-        if (Array.isArray(data)) {
-            data = data.map((user: any) => {
-                const { password, ...userWithoutPassword } = user;
-                return userWithoutPassword;
-            });
-        } else {
-            const { password, ...userWithoutPassword } = data;
-            data = userWithoutPassword;
-        }
+        // never return the password hash
+        const data = rows.map(({ password: _password, ...userWithoutPassword }) => userWithoutPassword);
 
         return c.json(data, 200);
     }
@@ -60,6 +70,11 @@ export async function handleUsers(c: HandlerContext, env: Env) {
                 return c.json({ msg: 'Unauthorized' }, 401);
             }
 
+            const [targetUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+            if (!targetUser) {
+                return c.json({ msg: 'Not found' }, 404);
+            }
+
             // Build a whitelisted update payload — never spread the raw body.
             const updates: { email?: string; firstName?: string; lastName?: string; isAdmin?: boolean; isVerified?: boolean; password?: string } = {};
 
@@ -77,7 +92,17 @@ export async function handleUsers(c: HandlerContext, env: Env) {
                 if (typeof body.isVerified === 'boolean') updates.isVerified = body.isVerified;
             }
 
+            // Changing the account email invalidates its verified status: the new
+            // address must be re-verified (otherwise anyone could park a verified
+            // account on an address they don't own). An admin may still set
+            // isVerified explicitly in the same request to override.
+            const emailChanged = updates.email !== undefined && updates.email !== targetUser.email;
+            if (emailChanged && updates.isVerified === undefined) {
+                updates.isVerified = false;
+            }
+
             // A password change is only ever allowed on your own account.
+            let passwordChanged = false;
             if (body.currentPassword !== undefined || body.newPassword !== undefined) {
                 if (!isCallingUser) {
                     return c.json({ msg: 'Unauthorized' }, 401);
@@ -86,20 +111,49 @@ export async function handleUsers(c: HandlerContext, env: Env) {
                 if (!pw.success) {
                     return c.json({ msg: 'Invalid request', errors: pw.error.flatten().fieldErrors }, 400);
                 }
-                const [dbUser] = await db.select().from(users).where(eq(users.id, sessionUser.id)).limit(1);
-                const check = dbUser ? verifyPassword(pw.data.currentPassword, dbUser.password, PASSWORD_SALT) : { valid: false };
+                const check = await verifyPassword(pw.data.currentPassword, targetUser.password, PASSWORD_SALT);
                 if (!check.valid) {
                     return c.json({ msg: 'Incorrect password' }, 401);
                 }
-                updates.password = hashPassword(pw.data.newPassword);
+                updates.password = await hashPassword(pw.data.newPassword);
+                passwordChanged = true;
             }
 
             if (Object.keys(updates).length === 0) {
                 return c.json({ msg: 'No valid fields to update' }, 400);
             }
 
-            const response = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+            let response;
+            try {
+                response = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+            } catch (err) {
+                if (isUniqueConstraintError(err)) {
+                    return c.json({ msg: 'Email already exists.' }, 409);
+                }
+                throw err;
+            }
             const updatedUser = Array.isArray(response) ? response[0] : response;
+
+            // The password changed: revoke every *other* session so a stolen
+            // session dies with the old credential (the caller keeps theirs).
+            if (passwordChanged) {
+                await revokeUserSessions(env, id, getCookie(c, SESSION_COOKIE));
+            }
+
+            // The email changed and wasn't admin-verified in the same request:
+            // issue a fresh verification token and email the new address.
+            if (emailChanged && updates.isVerified === false) {
+                const verificationRecord = await createVerification(db, updatedUser.email, 'verify');
+                const baseUrl = baseUrlFrom(c, env);
+                runInBackground(c, 'verify-email (email change)', () =>
+                    sendVerifyEmail(env, {
+                        email: updatedUser.email,
+                        firstName: updatedUser.firstName || '',
+                        token: verificationRecord.id,
+                        baseUrl,
+                    }),
+                );
+            }
 
             // never return the password hash to the client
             if (updatedUser) {
@@ -114,6 +168,12 @@ export async function handleUsers(c: HandlerContext, env: Env) {
     }
 
     if (method === 'POST') {
+        // Signup creates accounts and sends email — throttle per caller IP.
+        const signupLimit = await checkRateLimit(env, `signup:ip:${clientIp(c)}`, 10, 60 * 60 * 1000);
+        if (!signupLimit.allowed) {
+            return tooManyRequests(c, signupLimit.retryAfterSeconds);
+        }
+
         try {
             const parsed = registerSchema.safeParse(await c.req.json());
             if (!parsed.success) {
@@ -123,7 +183,7 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             // whitelist: never accept isAdmin/isVerified (or anything else) at signup
             const newUser = {
                 email: input.email,
-                password: hashPassword(input.password),
+                password: await hashPassword(input.password),
                 firstName: input.firstName ?? null,
                 lastName: input.lastName ?? null,
             };
@@ -137,36 +197,19 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             }
             const user = Array.isArray(response) ? response[0] : response;
 
-            // send email verification here
-            const [verificationRecord] = await db.insert(verifications).values({
-                email: user.email,
-                status: 'active',
-                purpose: 'verify',
-                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-            }).returning();
-
-            const resend = new Resend(env.RESEND_API_KEY);
-            // Get base URL from env or derive from request
-            const baseUrl = env.BASE_URL || (() => {
-                const url = new URL(c.req.url);
-                return `${url.protocol}//${url.host}`;
-            })();
-
-            // Import email template dynamically - using @ts-ignore because we're importing React components in a worker
-            // @ts-expect-error - importing React components in worker
-            const VerifyEmailTemplate = await import('../../../emails/verify-email.tsx');
-            
-            await resend.emails.send({
-                from: 'McDoodle <mcdoodle+registration@email.mcbrides.us>',
-                to: [user.email],
-                subject: 'McDoodle Account Verification',
-            react: VerifyEmailTemplate.default({
-                email: user.email,
-                firstName: user.firstName || '',
-                token: verificationRecord.id,
-                baseUrl: baseUrl
-            }),
-            });
+            // Create the verification token in-request (durable), then send the
+            // email after the response — a slow or failing Resend call should
+            // neither delay signup nor 500 an already-created account.
+            const verificationRecord = await createVerification(db, user.email, 'verify');
+            const baseUrl = baseUrlFrom(c, env);
+            runInBackground(c, 'verify-email (signup)', () =>
+                sendVerifyEmail(env, {
+                    email: user.email,
+                    firstName: user.firstName || '',
+                    token: verificationRecord.id,
+                    baseUrl,
+                }),
+            );
 
             if (user) {
                 delete (user as { password?: string }).password;
