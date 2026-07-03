@@ -13,6 +13,10 @@ Things we want to do:
       close/delete buttons now stack below the title)
 - [x] Option to require an account to participate in a poll. Anonymous visitors
       get a "create a free account to participate" popup; enforced server-side.
+- [x] Security/perf/UX overhaul (see `docs/security-perf-fixes.md`): API
+      surface lockdown, session hardening + revocation, rate limiting,
+      enumeration fixes, atomic D1 batching, nightly cleanup cron, axios
+      removal, server-driven auth guards, real 404s, lint green.
 
 ## Decided against (for now)
 

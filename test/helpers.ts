@@ -41,7 +41,6 @@ export async function createTestEnv(): Promise<TestEnv> {
   const env = {
     DB,
     PASSWORD_SALT: 'test-password-salt',
-    API_SECRET: 'test-api-secret',
     RESEND_API_KEY: 'test-resend-key',
     BASE_URL: 'http://localhost',
   } as unknown as Env
