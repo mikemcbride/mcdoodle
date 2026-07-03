@@ -20,6 +20,7 @@ export default function NewPollForm() {
   const [requiresAccount, setRequiresAccount] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   function updateSelected(val: any) {
     setSelected(val)
@@ -27,10 +28,11 @@ export default function NewPollForm() {
 
   function handleSubmit() {
     if (!title || selected.length === 0) {
-      // Basic validation - could add better error messages
+      setErrorMessage('A title and at least one date are required.')
       return;
     }
-    
+
+    setErrorMessage('')
     setIsSubmitting(true)
     Polls.create({
       title: title,
@@ -69,15 +71,13 @@ export default function NewPollForm() {
         flashSuccess()
       }).catch((error) => {
         console.error('Error creating questions:', error);
-        console.error('Error response:', error?.response?.data || error?.response || error?.message || error);
-        console.error('Questions that failed:', questionsToCreate);
         setIsSubmitting(false);
-        // Could show error message to user here
+        setErrorMessage(error?.response?.data?.msg || 'The poll was created but its dates could not be saved. Please try again.');
       })
     }).catch((error) => {
       console.error('Error creating poll:', error);
       setIsSubmitting(false);
-      // Could show error message to user here
+      setErrorMessage(error?.response?.data?.msg || 'Something went wrong creating the poll. Please try again.');
     })
   }
 
@@ -158,6 +158,12 @@ export default function NewPollForm() {
     </section>
 
     <SuccessAlert show={showSuccess} />
+
+    {errorMessage && (
+      <div className="mt-4 rounded-md bg-red-50 p-4 max-w-3xl">
+        <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+      </div>
+    )}
 
     <footer className="mt-4 flex flex-col-reverse sm:flex-row justify-end w-full max-w-3xl gap-4">
       <Link

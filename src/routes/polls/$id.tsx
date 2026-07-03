@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { createFileRoute, Link, notFound, useRouter } from '@tanstack/react-router';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
 import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
@@ -15,9 +15,14 @@ import { Poll, Submission } from '../../types';
 export const Route = createFileRoute('/polls/$id')({
   // Loads on the server during SSR (in-process D1 read) and as an RPC on
   // client navigation.
-  loader: async ({ params }) => ({
-    poll: (await getPollServerFn({ data: params.id })) as Poll | null,
-  }),
+  loader: async ({ params }) => {
+    const poll = (await getPollServerFn({ data: params.id })) as Poll | null;
+    // A real 404 (status code + component), not a 200 with a sad div —
+    // matters for crawlers and link unfurlers as much as for humans.
+    if (!poll) throw notFound();
+    return { poll };
+  },
+  notFoundComponent: PollNotFound,
   // Server-rendered <title> + OG/Twitter tags so shared poll links unfurl nicely.
   head: ({ loaderData }) => {
     const poll = loaderData?.poll;
@@ -42,6 +47,23 @@ export const Route = createFileRoute('/polls/$id')({
   },
   component: RouteComponent,
 })
+
+function PollNotFound() {
+  return (
+    <section className="flex flex-col items-center py-16 text-center">
+      <h2 className="text-3xl font-black text-gray-900">Poll not found</h2>
+      <p className="mt-4 text-lg text-gray-700">
+        This poll may have been deleted, or the link may be incorrect.
+      </p>
+      <Link
+        to="/"
+        className="mt-8 inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Go to your polls
+      </Link>
+    </section>
+  );
+}
 
 function RouteComponent() {
   const { user } = useAuth();
@@ -90,7 +112,7 @@ function RouteComponent() {
   }
 
   if (!poll) {
-    return <div>Poll not found</div>;
+    return <PollNotFound />;
   }
 
   const crumbs = [

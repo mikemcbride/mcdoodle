@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import UserList from '../components/UserList';
 import User from '../services/users';
@@ -11,12 +12,25 @@ export const Route = createFileRoute('/_auth/users')({
 
 function UserManagement() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // The user directory is admin-only (the API enforces this too — a non-admin
+  // would just get a 403). Send everyone else home instead of an empty shell.
+  const isAdmin = !!user?.isAdmin;
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate({ to: '/', replace: true });
+    }
+  }, [isAdmin, navigate]);
 
   const { data: localUsers = [], isLoading } = useQuery<UserType[]>({
     queryKey: ['users'],
     queryFn: User.list,
+    enabled: isAdmin,
   });
+
+  if (!isAdmin) return null;
 
   async function handleToggleRole(userId: string, nextIsAdmin: boolean) {
     // optimistically update the cached list

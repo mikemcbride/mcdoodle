@@ -35,7 +35,7 @@ export default function LoginForm({ onLogin }: { onLogin: (user: AuthUser) => vo
     }).catch(e => {
       setSubmitting(false);
       console.error("Error logging in:", e);
-      setErrorMessage(e.response.data.message);
+      setErrorMessage(e?.response?.data?.message || 'Unable to log in. Please try again.');
     })
   }
 
