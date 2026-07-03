@@ -1,10 +1,13 @@
 import http from './http'
 import { Response, ResponseQueryParams } from '../types';
 
+// A response that hasn't been persisted yet (no id).
+export type NewResponse = Omit<Response, 'id'>
+
 export default class Responses {
-    static async find(params: ResponseQueryParams) {
+    static async find(params: ResponseQueryParams): Promise<Response[]> {
         try {
-            const { data } = await http.get('/responses', { params })
+            const { data } = await http.get<Response[]>('/responses', { params })
             return data
         } catch (e) {
             console.error('unable to fetch responses', e)
@@ -12,9 +15,9 @@ export default class Responses {
         }
     }
 
-    static async findById(id: string) {
+    static async findById(id: string): Promise<Response | null> {
         try {
-            const { data } = await http.get('/responses', { params: { id } })
+            const { data } = await http.get<Response>('/responses', { params: { id } })
             return data
         } catch (e) {
             console.error('unable to fetch response by id', e)
@@ -22,32 +25,18 @@ export default class Responses {
         }
     }
 
-    static async create(payload: Response) {
-        const { data } = await http.post('/responses', payload)
+    static async create(payload: NewResponse[]): Promise<Response[]> {
+        const { data } = await http.post<Response[]>('/responses', payload)
         return data
     }
 
-    static async update(payload: Response | Response[]) {
-        if (Array.isArray(payload)) {
-            payload = payload.map(item => {
-                return {
-                    id: item.id,
-                    value: item.value,
-                    question_id: item.question_id,
-                    submission_id: item.submission_id,
-                    poll_id: item.poll_id,
-                }
-            })
-        } else {
-            payload = {
-                id: payload.id,
-                value: payload.value,
-                question_id: payload.question_id,
-                submission_id: payload.submission_id,
-                poll_id: payload.poll_id,
-            }
-        }
-        const { data } = await http.put('/responses', payload)
+    static async update(payload: Response[]): Promise<Response[]> {
+        // only id + value are updatable server-side
+        const updateFields = payload.map(item => ({
+            id: item.id,
+            value: item.value,
+        }))
+        const { data } = await http.put<Response[]>('/responses', updateFields)
         return data
     }
 }

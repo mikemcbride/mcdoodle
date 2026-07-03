@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import UserList from '../components/UserList';
 import User from '../services/users';
-import { useAuth } from '../auth';
+import { useAuth } from '../context/AuthContext';
 import { User as UserType } from '../types';
 
 export const Route = createFileRoute('/_auth/users')({

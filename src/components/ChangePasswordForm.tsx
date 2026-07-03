@@ -1,6 +1,6 @@
 import { Dialog, DialogPanel, DialogTitle, DialogBackdrop } from '@headlessui/react';
 import { useState } from 'react';
-import { useAuth } from '../auth'
+import { useAuth } from '../context/AuthContext';
 import Users from '../services/users.js';
 import LoginError from './LoginError.js';
 import { Link } from '@tanstack/react-router';

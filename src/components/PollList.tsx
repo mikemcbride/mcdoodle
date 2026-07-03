@@ -1,12 +1,12 @@
 import PollCard from "./PollCard";
 import AdminPollCard from "./AdminPollCard";
+import type { Poll } from "../types";
 
-// TODO: add typing for entities
 export default function PollList({
   polls,
   isAdmin,
 }: {
-  polls: any[];
+  polls: Poll[];
   isAdmin?: boolean;
 }) {
   return (

@@ -1,4 +1,4 @@
-import { getDb } from '../../../db/index.js';
+import { getDb, type Db } from '../../../db/index.js';
 import { responses } from '../../../db/schema/responses.js';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
@@ -6,8 +6,8 @@ import { responseCreateSchema, responseUpdateSchema } from '../../schemas.js';
 import { checkPollsAllowVoting } from '../../poll-guards.js';
 import type { HandlerContext, Env } from '../../types.js';
 
-export async function getResponses(db: any, opts: { id?: string; poll_id?: string } = {}) {
-    let q = db.select().from(responses);
+export async function getResponses(db: Db, opts: { id?: string; poll_id?: string } = {}) {
+    let q = db.select().from(responses).$dynamic();
     if (opts.id) {
         q = q.where(eq(responses.id, opts.id));
     }

@@ -1,9 +1,15 @@
 import http from './http'
+import type { Submission } from '../types'
+
+type SubmissionQueryParams = {
+    id?: string;
+    poll_id?: string;
+}
 
 export default class Submissions {
-    static async find(params = {}) {
+    static async find(params: SubmissionQueryParams = {}): Promise<Submission[]> {
         try {
-            const { data } = await http.get('/submissions', { params })
+            const { data } = await http.get<Submission[]>('/submissions', { params })
             return data
         } catch (e) {
             console.error('unable to fetch submissions', e)
@@ -11,9 +17,9 @@ export default class Submissions {
         }
     }
 
-    static async findById(id: string) {
+    static async findById(id: string): Promise<Submission | null> {
         try {
-            const { data } = await http.get('/submissions', { params: { id } })
+            const { data } = await http.get<Submission>('/submissions', { params: { id } })
             return data
         } catch (e) {
             console.error('unable to fetch submission by id', e)
@@ -21,20 +27,18 @@ export default class Submissions {
         }
     }
 
-    // TODO: add type for payload
-    static async create(payload: any) {
-        const { data } = await http.post('/submissions', payload)
+    static async create(payload: { person: string; poll_id: string }): Promise<Submission> {
+        const { data } = await http.post<Submission>('/submissions', payload)
         return data
     }
 
-    // TODO: add type for payload
-    static async update(payload: any) {
+    static async update(payload: Pick<Submission, 'id' | 'person'>): Promise<Submission> {
+        // only the display name is updatable server-side
         const updateFields = {
             id: payload.id,
             person: payload.person,
-            poll_id: payload.poll_id,
         }
-        const { data } = await http.put('/submissions', updateFields)
+        const { data } = await http.put<Submission>('/submissions', updateFields)
         return data
     }
 }

@@ -1,9 +1,9 @@
-import { getDb } from '../../../db/index.js';
+import { getDb, type Db } from '../../../db/index.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
 import type { HandlerContext, Env } from '../../types.js';
 
-export async function getVerification(db: any, id: string) {
+export async function getVerification(db: Db, id: string) {
     // never going to be getting a list of verifications, just one by id.
     const data = await db.select().from(verifications).where(eq(verifications.id, id));
     try {
@@ -25,7 +25,7 @@ export async function getVerification(db: any, id: string) {
     }
 }
 
-export async function processVerification(db: any, id: string, email: string, action: 'verify' | 'reject' = 'verify') {
+export async function processVerification(db: Db, id: string, email: string, action: 'verify' | 'reject' = 'verify') {
     const data = await db.select().from(verifications).where(eq(verifications.id, id));
     let record = null;
     try {

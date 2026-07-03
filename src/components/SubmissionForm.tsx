@@ -1,13 +1,14 @@
 import clsx from 'clsx';
 import { XCircleIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
-import { useAuth } from '../auth';
+import { useAuth } from '../context/AuthContext';
 
 import Spinner from './Spinner';
 import DateResponse from './DateResponse';
 
 import Submissions from '../services/submissions.js';
 import Responses from '../services/responses.js';
+import { HttpError } from '../services/http';
 
 import { Poll, Submission, Vote } from '../types';
 
@@ -21,24 +22,16 @@ type PropTypes = {
 const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: PropTypes) => {
   // set up local component data
   const { user } = useAuth();
-  const questions = poll.questions;
-  if (!questions || !questions.length) {
-    console.error('Poll does not have any questions');
-    return null;
-  }
+  const questions = poll.questions ?? [];
   let initialVotes: Vote[] = []
   if (submission === null) {
-    if (!questions || !questions.length) {
-      initialVotes = []
-    } else {
-      initialVotes = questions.map(question => {
-        return {
-          question: question.id,
-          date: question.value,
-          response: null,
-        }
-      })
-    }
+    initialVotes = questions.map(question => {
+      return {
+        question: question.id,
+        date: question.value,
+        response: null,
+      }
+    })
   } else {
     initialVotes = questions.map(question => {
       const found = submission.responses?.find(r => r.question_id === question.id)
@@ -61,6 +54,12 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: Pro
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [showInvalidMessage, setShowInvalidMessage] = useState<boolean>(false)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+
+  // NOTE: this early return must stay below the hooks (rules-of-hooks).
+  if (!questions.length) {
+    console.error('Poll does not have any questions');
+    return null;
+  }
 
   // methods
   function setVote(payload: Vote) {
@@ -95,10 +94,11 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: Pro
 
   // Surface the server's rejection (poll closed while the form was open,
   // account now required, rate limited, …) instead of spinning forever.
-  function handleSubmitError(e: any) {
+  function handleSubmitError(e: unknown) {
     console.error('Error saving submission:', e)
+    const serverMsg = e instanceof HttpError ? (e.response.data as { msg?: string } | null)?.msg : undefined
     setSubmitting(false)
-    setValidationErrors([e?.response?.data?.msg || 'Something went wrong saving your response. Please try again.'])
+    setValidationErrors([serverMsg || 'Something went wrong saving your response. Please try again.'])
     setShowInvalidMessage(true)
   }
 
@@ -132,13 +132,13 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: Pro
         handleSubmitted(newSubmission)
       } else {
         const data = await Submissions.create({ person: submittedBy, poll_id: poll.id })
-        data.responses = votes.map(vote => ({
+        const newResponses = votes.map(vote => ({
           question_id: vote.question,
           value: vote.response,
           submission_id: data.id,
           poll_id: poll.id
         }))
-        await Responses.create(data.responses)
+        data.responses = await Responses.create(newResponses)
         handleSubmitted(data)
       }
       setSubmitting(false)

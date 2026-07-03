@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import AppMenu from './AppMenu';
-import { useAuth } from '../auth';
+import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 
 export default function AppHeader() {

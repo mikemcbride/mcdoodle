@@ -1,4 +1,4 @@
-import { getDb } from '../../../db/index.js';
+import { getDb, type Db } from '../../../db/index.js';
 import { submissions } from '../../../db/schema/submissions.js';
 import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
@@ -6,8 +6,8 @@ import { submissionCreateSchema, submissionUpdateSchema } from '../../schemas.js
 import { checkPollsAllowVoting } from '../../poll-guards.js';
 import type { HandlerContext, Env } from '../../types.js';
 
-export async function getSubmissions(db: any, opts: { id?: string; poll_id?: string } = {}) {
-    let q = db.select().from(submissions);
+export async function getSubmissions(db: Db, opts: { id?: string; poll_id?: string } = {}) {
+    let q = db.select().from(submissions).$dynamic();
     if (opts.id) {
         q = q.where(eq(submissions.id, opts.id));
     }

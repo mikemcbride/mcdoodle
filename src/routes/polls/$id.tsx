@@ -9,7 +9,7 @@ import Breadcrumbs from '../../components/Breadcrumbs';
 import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import CopyLinkButton from '../../components/CopyLinkButton';
 import { getPollServerFn } from '../../server/polls';
-import { useAuth } from '../../auth';
+import { useAuth } from '../../context/AuthContext';
 import { Poll, Submission } from '../../types';
 
 export const Route = createFileRoute('/polls/$id')({

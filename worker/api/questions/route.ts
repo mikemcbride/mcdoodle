@@ -1,4 +1,4 @@
-import { getDb } from '../../../db/index.js';
+import { getDb, type Db } from '../../../db/index.js';
 import { questions } from '../../../db/schema/questions.js';
 import { polls } from '../../../db/schema/polls.js';
 import { eq, inArray } from 'drizzle-orm';
@@ -6,8 +6,8 @@ import { z } from 'zod';
 import { questionCreateSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
-export async function getQuestions(db: any, opts: { id?: string; poll_id?: string } = {}) {
-    let q = db.select().from(questions);
+export async function getQuestions(db: Db, opts: { id?: string; poll_id?: string } = {}) {
+    let q = db.select().from(questions).$dynamic();
     if (opts.id) {
         q = q.where(eq(questions.id, opts.id));
     }

@@ -1,7 +1,7 @@
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 import { Link } from '@tanstack/react-router';
-import { useAuth } from '../auth'
+import { useAuth } from '../context/AuthContext';
 import { UserCircleIcon, UserIcon, UsersIcon, KeyIcon, ArrowLeftStartOnRectangleIcon } from '@heroicons/react/24/solid'
 
 function classNames(...classes: string[]) {

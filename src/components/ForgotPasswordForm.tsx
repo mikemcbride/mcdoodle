@@ -2,7 +2,7 @@ import { useState } from 'react';
 import clsx from 'clsx';
 import http from '../services/http';
 import LoginError from './LoginError';
-import { useAuth } from '../auth';
+import { useAuth } from '../context/AuthContext';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function ForgotPasswordForm() {

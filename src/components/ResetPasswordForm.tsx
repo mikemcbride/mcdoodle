@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { Link } from '@tanstack/react-router';
 import http from '../services/http';
-import { useAuth } from '../auth';
+import { useAuth } from '../context/AuthContext';
 import LoginError from './LoginError';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
@@ -10,8 +10,16 @@ type ResetPasswordFormProps = {
   token: string;
 };
 
+// Shape returned by GET /api/verifications (error responses carry `msg`).
+type VerificationData = {
+  id: string;
+  email: string;
+  status: string;
+  msg?: string;
+};
+
 export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
-  const [verification, setVerification] = useState<any>(null);
+  const [verification, setVerification] = useState<VerificationData | null>(null);
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +37,7 @@ export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       return;
     }
 
-    http.get(`/verifications?id=${token}`)
+    http.get<VerificationData>(`/verifications?id=${token}`)
       .then(({ data }) => {
         if (data.msg === 'Not found') {
           setError('Not found');

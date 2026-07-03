@@ -22,7 +22,7 @@ export default function NewPollForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  function updateSelected(val: any) {
+  function updateSelected(val: string[]) {
     setSelected(val)
   }
 

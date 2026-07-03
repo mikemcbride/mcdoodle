@@ -55,10 +55,10 @@ async function request<T>(
 }
 
 const http = {
-  get: <T = any>(url: string, config?: RequestConfig) => request<T>('GET', url, undefined, config),
-  post: <T = any>(url: string, body?: unknown, config?: RequestConfig) => request<T>('POST', url, body, config),
-  put: <T = any>(url: string, body?: unknown, config?: RequestConfig) => request<T>('PUT', url, body, config),
-  delete: <T = any>(url: string, config?: RequestConfig) => request<T>('DELETE', url, undefined, config),
+  get: <T = unknown>(url: string, config?: RequestConfig) => request<T>('GET', url, undefined, config),
+  post: <T = unknown>(url: string, body?: unknown, config?: RequestConfig) => request<T>('POST', url, body, config),
+  put: <T = unknown>(url: string, body?: unknown, config?: RequestConfig) => request<T>('PUT', url, body, config),
+  delete: <T = unknown>(url: string, config?: RequestConfig) => request<T>('DELETE', url, undefined, config),
 }
 
 export default http

@@ -35,25 +35,17 @@ export async function handleUsers(c: HandlerContext, env: Env) {
         const userId = c.req.query('userId');
 
         // allow find by email or user_id
-        let q: any = db.select().from(users);
+        let q = db.select().from(users).$dynamic();
         if (email) {
             q = q.where(eq(users.email, email));
         } else if (userId) {
             q = q.where(eq(users.id, userId));
         }
 
-        let data: any = await q;
+        const rows = await q;
 
-        // remove the password
-        if (Array.isArray(data)) {
-            data = data.map((user: any) => {
-                const { password, ...userWithoutPassword } = user;
-                return userWithoutPassword;
-            });
-        } else {
-            const { password, ...userWithoutPassword } = data;
-            data = userWithoutPassword;
-        }
+        // never return the password hash
+        const data = rows.map(({ password: _password, ...userWithoutPassword }) => userWithoutPassword);
 
         return c.json(data, 200);
     }

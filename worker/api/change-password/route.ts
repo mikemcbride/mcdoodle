@@ -3,7 +3,7 @@
 // (used by the forgot-password / reset flow.) the logged-in "change password"
 // flow goes through PUT /api/users instead, which verifies the current password.
 
-import { getDb } from '../../../db/index.js';
+import { getDb, type Db } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
@@ -12,7 +12,7 @@ import { revokeUserSessions } from '../../auth.js';
 import { resetPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
-async function updatePassword(db: any, email: string, password: string) {
+async function updatePassword(db: Db, email: string, password: string) {
     return db.update(users).set({ password: await hashPassword(password) }).where(eq(users.email, email));
 }
 
