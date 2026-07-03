@@ -5,6 +5,7 @@ import { getCookie } from 'hono/cookie';
 import { hashPassword, verifyPassword } from '../../password.js';
 import { SESSION_COOKIE, revokeUserSessions } from '../../auth.js';
 import { runInBackground } from '../../background.js';
+import { checkRateLimit, clientIp, tooManyRequests } from '../../rate-limit.js';
 import { createVerification, sendVerifyEmail, baseUrlFrom } from '../../emails.js';
 import { registerSchema, updateProfileSchema, changeOwnPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
@@ -175,6 +176,12 @@ export async function handleUsers(c: HandlerContext, env: Env) {
     }
 
     if (method === 'POST') {
+        // Signup creates accounts and sends email — throttle per caller IP.
+        const signupLimit = await checkRateLimit(env, `signup:ip:${clientIp(c)}`, 10, 60 * 60 * 1000);
+        if (!signupLimit.allowed) {
+            return tooManyRequests(c, signupLimit.retryAfterSeconds);
+        }
+
         try {
             const parsed = registerSchema.safeParse(await c.req.json());
             if (!parsed.success) {

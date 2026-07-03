@@ -28,7 +28,7 @@ afterAll(async () => {
 
 // ---- helpers ---------------------------------------------------------------
 
-const TABLES = ['responses', 'submissions', 'questions', 'sessions', 'polls', 'verifications', 'users']
+const TABLES = ['responses', 'submissions', 'questions', 'sessions', 'polls', 'verifications', 'users', 'rate_limits']
 
 async function reset() {
   for (const t of TABLES) await env.DB.prepare(`DELETE FROM ${t}`).run()
@@ -399,6 +399,34 @@ describe('password reset token flow', () => {
 
     expect((await req('/api/me', auth(s1))).status).toBe(401)
     expect((await req('/api/me', auth(s2))).status).toBe(401)
+  })
+})
+
+describe('rate limiting', () => {
+  it('locks an account key after 5 failed logins and clears on success', async () => {
+    await seedUser({ email: 'rl@t.local', password: 'password123' })
+
+    for (let i = 0; i < 5; i++) {
+      expect((await login('rl@t.local', 'wrong')).status).toBe(401)
+    }
+    // 6th attempt is throttled — even with the correct password
+    const throttled = await login('rl@t.local', 'password123')
+    expect(throttled.status).toBe(429)
+    expect(throttled.headers.get('retry-after')).toBeTruthy()
+
+    // window reset → correct login succeeds and clears the counter
+    await env.DB.prepare('DELETE FROM rate_limits').run()
+    expect((await login('rl@t.local', 'password123')).status).toBe(200)
+    const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM rate_limits WHERE key LIKE 'login:email:%'").first<{ n: number }>()
+    expect(row?.n).toBe(0)
+  })
+
+  it('throttles forgot-password per email address', async () => {
+    await seedUser({ email: 'fp@t.local' })
+    for (let i = 0; i < 3; i++) {
+      expect((await req('/api/forgot-password', json({ email: 'fp@t.local' }))).status).toBe(200)
+    }
+    expect((await req('/api/forgot-password', json({ email: 'fp@t.local' }))).status).toBe(429)
   })
 })
 

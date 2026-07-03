@@ -2,6 +2,7 @@ import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { eq } from 'drizzle-orm';
 import { runInBackground } from '../../background.js';
+import { checkRateLimit, clientIp, tooManyRequests } from '../../rate-limit.js';
 import { createVerification, sendPasswordResetEmail, baseUrlFrom } from '../../emails.js';
 import { forgotPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
@@ -16,6 +17,17 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
         return c.json({ error: 'Email is required' }, 400);
     }
     const { email } = parsed.data;
+
+    // This endpoint sends email on our behalf — throttle it hard, per target
+    // address (mailbox bombing) and per caller IP (Resend quota burn).
+    const WINDOW_MS = 60 * 60 * 1000;
+    const [byEmail, byIp] = await Promise.all([
+        checkRateLimit(env, `forgot:email:${email.toLowerCase()}`, 3, WINDOW_MS),
+        checkRateLimit(env, `forgot:ip:${clientIp(c)}`, 10, WINDOW_MS),
+    ]);
+    if (!byEmail.allowed || !byIp.allowed) {
+        return tooManyRequests(c, Math.max(byEmail.retryAfterSeconds, byIp.retryAfterSeconds));
+    }
 
     const db = getDb(env.DB);
     const userRes = await db.select().from(users).where(eq(users.email, email));
