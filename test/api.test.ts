@@ -175,10 +175,140 @@ describe('dashboard scoping + ownership', () => {
   })
 })
 
+async function seedSubmission(pollId: string, person = 'X') {
+  const id = uid('sub')
+  await env.DB.prepare('INSERT INTO submissions (id,person,poll_id) VALUES (?,?,?)').bind(id, person, pollId).run()
+  return id
+}
+
+async function seedQuestion(pollId: string) {
+  const id = uid('q')
+  await env.DB.prepare('INSERT INTO questions (id,value,"order",poll_id) VALUES (?,?,0,?)').bind(id, '2026-01-01', pollId).run()
+  return id
+}
+
+async function seedResponse(pollId: string, questionId: string, submissionId: string, value = 'yes') {
+  const id = uid('r')
+  await env.DB.prepare('INSERT INTO responses (id,value,question_id,submission_id,poll_id) VALUES (?,?,?,?,?)')
+    .bind(id, value, questionId, submissionId, pollId)
+    .run()
+  return id
+}
+
+describe('endpoint lockdown', () => {
+  it('GET /api/users requires an admin session', async () => {
+    await seedUser({ id: 'u1', email: 'u1@t.local' })
+    await seedUser({ id: 'adm1', isAdmin: true })
+
+    expect((await req('/api/users')).status).toBe(401)
+
+    const s = await seedSession('u1')
+    expect((await req('/api/users', auth(s))).status).toBe(403)
+
+    const sa = await seedSession('adm1')
+    const res = await req('/api/users', auth(sa))
+    expect(res.status).toBe(200)
+    const list = await res.json<Array<{ email: string; password?: string }>>()
+    expect(list.length).toBe(2)
+    expect(list.every((u) => !('password' in u))).toBe(true)
+  })
+
+  it('GET /api/polls without an id is rejected (no anonymous listing)', async () => {
+    await seedPoll({ id: 'pl' })
+    expect((await req('/api/polls')).status).toBe(400)
+    // fetching one by id stays public (polls are shared by direct link)
+    expect((await req('/api/polls?id=pl')).status).toBe(200)
+  })
+
+  it('GET /api/submissions|responses|questions require a filter', async () => {
+    expect((await req('/api/submissions')).status).toBe(400)
+    expect((await req('/api/responses')).status).toBe(400)
+    expect((await req('/api/questions')).status).toBe(400)
+  })
+
+  it('POST /api/questions requires the poll owner (or an admin)', async () => {
+    await seedUser({ id: 'owner' })
+    await seedUser({ id: 'other' })
+    await seedUser({ id: 'adm2', isAdmin: true })
+    await seedPoll({ id: 'pq', createdBy: 'owner' })
+
+    const q = { value: '2026-01-01', order: 0, poll_id: 'pq' }
+
+    // anonymous
+    expect((await req('/api/questions', json(q))).status).toBe(401)
+    // authenticated non-owner
+    const so = await seedSession('other')
+    expect((await req('/api/questions', json(q, so))).status).toBe(403)
+    // owner
+    const s = await seedSession('owner')
+    expect((await req('/api/questions', json(q, s))).status).toBe(200)
+    // admin
+    const sa = await seedSession('adm2')
+    expect((await req('/api/questions', json({ ...q, order: 1 }, sa))).status).toBe(200)
+    // nonexistent poll
+    expect((await req('/api/questions', json({ ...q, poll_id: 'nope' }, s))).status).toBe(404)
+  })
+})
+
 describe('voting guards', () => {
   it('rejects submissions to a closed poll', async () => {
     await seedPoll({ id: 'pc', status: 'closed' })
     expect((await req('/api/submissions', json({ person: 'X', poll_id: 'pc' }))).status).toBe(403)
+  })
+
+  it('rejects responses to a closed poll', async () => {
+    await seedPoll({ id: 'pc2', status: 'closed' })
+    const qid = await seedQuestion('pc2')
+    const sub = await seedSubmission('pc2')
+    const res = await req(
+      '/api/responses',
+      json({ value: 'yes', question_id: qid, submission_id: sub, poll_id: 'pc2' }),
+    )
+    expect(res.status).toBe(403)
+  })
+
+  it('rejects editing submissions and responses on a closed poll', async () => {
+    await seedPoll({ id: 'pc3', status: 'closed' })
+    const qid = await seedQuestion('pc3')
+    const sub = await seedSubmission('pc3')
+    const rid = await seedResponse('pc3', qid, sub)
+
+    const putSub = await req('/api/submissions', { ...json({ id: sub, person: 'Hacker' }), method: 'PUT' })
+    expect(putSub.status).toBe(403)
+
+    const putRes = await req('/api/responses', { ...json({ id: rid, value: 'no' }), method: 'PUT' })
+    expect(putRes.status).toBe(403)
+  })
+
+  it('rejects anonymous response writes to an account-required poll', async () => {
+    await seedPoll({ id: 'pr2', requiresAccount: true })
+    const qid = await seedQuestion('pr2')
+    const sub = await seedSubmission('pr2')
+    const res = await req(
+      '/api/responses',
+      json({ value: 'yes', question_id: qid, submission_id: sub, poll_id: 'pr2' }),
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it('a response cannot be re-pointed at another poll via PUT', async () => {
+    await seedPoll({ id: 'pa1' })
+    await seedPoll({ id: 'pa2' })
+    const qid = await seedQuestion('pa1')
+    const sub = await seedSubmission('pa1')
+    const rid = await seedResponse('pa1', qid, sub)
+
+    const res = await req('/api/responses', {
+      ...json({ id: rid, value: 'no', poll_id: 'pa2', submission_id: 'zzz', question_id: 'zzz' }),
+      method: 'PUT',
+    })
+    expect(res.status).toBe(200)
+    const row = await env.DB.prepare('SELECT poll_id, submission_id, value FROM responses WHERE id = ?')
+      .bind(rid)
+      .first<{ poll_id: string; submission_id: string; value: string }>()
+    expect(row?.poll_id).toBe('pa1')
+    expect(row?.submission_id).toBe(sub)
+    expect(row?.value).toBe('no')
   })
 
   it('rejects anonymous submissions to an account-required poll', async () => {

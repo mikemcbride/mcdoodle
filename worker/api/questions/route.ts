@@ -1,6 +1,7 @@
 import { getDb } from '../../../db/index.js';
 import { questions } from '../../../db/schema/questions.js';
-import { eq } from 'drizzle-orm';
+import { polls } from '../../../db/schema/polls.js';
+import { eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { questionCreateSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
@@ -36,12 +37,23 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
     if (method === 'GET') {
         const id = c.req.query('id');
         const poll_id = c.req.query('poll_id');
-        
+
+        // Never list every question across all polls; require a filter.
+        if (!id && !poll_id) {
+            return c.json({ msg: 'id or poll_id is required' }, 400);
+        }
+
         const { status, data } = await getQuestions(db, { id, poll_id });
         return c.json(data, status as 200 | 404 | 500);
     }
 
     if (method === 'POST') {
+        // Only the poll's owner (or an admin) may add questions to it.
+        const currentUser = c.get('user');
+        if (!currentUser) {
+            return c.json({ msg: 'Unauthorized' }, 401);
+        }
+
         try {
             const body = await c.req.json();
             const isArray = Array.isArray(body);
@@ -55,37 +67,29 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
                 return c.json({ msg: 'No questions provided' }, 400);
             }
 
-            console.log(`Inserting ${valuesToInsert.length} questions`);
-            
-            // SQLite/D1 has a limit on the number of variables in a single statement
-            // Batch inserts to avoid "too many variables" error
-            // Using batches of 25 to be conservative (D1 may have stricter limits than standard SQLite)
-            // Each row has 3 fields (value, poll_id, order), so 30 rows = 90 variables
-            const BATCH_SIZE = 25;
-            const allResults: any[] = [];
-            
-            for (let i = 0; i < valuesToInsert.length; i += BATCH_SIZE) {
-                const batch = valuesToInsert.slice(i, i + BATCH_SIZE);
-                const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-                console.log(`Inserting batch ${batchNumber} (${batch.length} questions, indices ${i} to ${i + batch.length - 1})`);
-                
-                try {
-                    const batchResponse: any = await db.insert(questions).values(batch).returning();
-                    const batchResults = Array.isArray(batchResponse) ? batchResponse : [batchResponse];
-                    allResults.push(...batchResults);
-                    console.log(`Batch ${batchNumber} inserted successfully`);
-                } catch (batchError) {
-                    console.error(`Error inserting batch ${batchNumber}:`, batchError);
-                    const batchErrorMessage = batchError instanceof Error ? batchError.message : String(batchError);
-                    throw new Error(`Failed to insert batch ${batchNumber}: ${batchErrorMessage}`);
-                }
+            const pollIds = [...new Set(valuesToInsert.map((v) => v.poll_id))];
+            const pollRows = await db.select().from(polls).where(inArray(polls.id, pollIds));
+            if (pollRows.length !== pollIds.length) {
+                return c.json({ msg: 'Poll not found' }, 404);
             }
-            
-            console.log(`Successfully inserted ${allResults.length} questions`);
-            
+            if (!currentUser.isAdmin && pollRows.some((p) => p.createdBy !== currentUser.id)) {
+                return c.json({ msg: 'Forbidden' }, 403);
+            }
+
+            // D1 limits bound parameters per statement (100), so chunk the rows
+            // (4 params each incl. the generated id) and run all chunks in a
+            // single atomic batch (one round trip; all-or-nothing).
+            const CHUNK_SIZE = 25;
+            const inserts = [];
+            for (let i = 0; i < valuesToInsert.length; i += CHUNK_SIZE) {
+                inserts.push(db.insert(questions).values(valuesToInsert.slice(i, i + CHUNK_SIZE)).returning());
+            }
+            const batchResults = await db.batch(inserts as [typeof inserts[0], ...typeof inserts]);
+            const allResults = batchResults.flat();
+
             // if we only inserted one row, we don't need to return an array.
             const result = allResults.length === 1 && !isArray ? allResults[0] : allResults;
-            
+
             return c.json(result, 200);
         } catch (err) {
             console.error('Error creating questions:', err);

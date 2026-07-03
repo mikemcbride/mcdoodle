@@ -13,6 +13,17 @@ export async function handleUsers(c: HandlerContext, env: Env) {
     const PASSWORD_SALT = env.PASSWORD_SALT;
 
     if (method === 'GET') {
+        // The user directory is admin-only: it exposes every account's email,
+        // name, role, and verification status (and allows lookups by email,
+        // which would otherwise enable account enumeration).
+        const sessionUser = c.get('user');
+        if (!sessionUser) {
+            return c.json({ msg: 'Unauthorized' }, 401);
+        }
+        if (!sessionUser.isAdmin) {
+            return c.json({ msg: 'Forbidden' }, 403);
+        }
+
         const email = c.req.query('email');
         const userId = c.req.query('userId');
 
