@@ -56,13 +56,15 @@ export async function processVerification(db: any, id: string, email: string, ac
         if (record.purpose && record.purpose !== 'verify') {
             return { status: 401, data: { msg: 'Invalid verification token.' } };
         }
-        // process the verification
-        if (action === 'reject') {
-            record.status = 'rejected';
-        } else {
-            record.status = 'verified';
-        }
-        let [updated] = await db.update(verifications).set(record).where(eq(verifications.id, record.id)).returning();
+        // process the verification — update only the status, never write the
+        // whole record back (that pattern is one refactor away from letting a
+        // request body overwrite arbitrary columns).
+        const nextStatus = action === 'reject' ? 'rejected' : 'verified';
+        const [updated] = await db
+            .update(verifications)
+            .set({ status: nextStatus })
+            .where(eq(verifications.id, record.id))
+            .returning();
         return {
             status: 200,
             data: updated

@@ -1,8 +1,8 @@
 import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
-import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
-import { Resend } from 'resend';
+import { runInBackground } from '../../background.js';
+import { createVerification, sendPasswordResetEmail, baseUrlFrom } from '../../emails.js';
 import { forgotPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
@@ -18,47 +18,26 @@ export async function handleForgotPassword(c: HandlerContext, env: Env): Promise
     const { email } = parsed.data;
 
     const db = getDb(env.DB);
-    // check if the email exists in the database. if not, return error.
     const userRes = await db.select().from(users).where(eq(users.email, email));
+
+    // Whether or not the account exists, respond identically (200) — a
+    // different answer here lets anyone probe which emails have accounts.
     if (userRes.length === 0) {
-        return c.json({ error: 'User not found' }, 400);
+        return c.json({ message: 'ok' }, 200);
     }
 
-    // generate a token tied to their email.
-    const [verificationRecord] = await db.insert(verifications).values({
-        email: email,
-        status: 'active',
-        purpose: 'reset',
-        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour
-    }).returning();
-
-    // 4. Send an email with a URL that includes the token (we'll verify on the page they land on in the UI)
-    const resend = new Resend(env.RESEND_API_KEY);
-    // Get base URL from env or derive from request
-    const baseUrl = env.BASE_URL || (() => {
-        const url = new URL(c.req.url);
-        return `${url.protocol}//${url.host}`;
-    })();
-
-    // Import email template dynamically - using @ts-expect-error because we're importing React components in a worker
-    // @ts-expect-error - importing React components in worker
-    const ForgotPasswordTemplate = await import('../../../emails/forgot-password.tsx');
-
-    const { error } = await resend.emails.send({
-        from: 'McDoodle <mcdoodle+password-reset@email.mcbrides.us>',
-        to: [verificationRecord.email],
-        subject: 'McDoodle Password Reset Request',
-        react: ForgotPasswordTemplate.default({
-            token: verificationRecord.id,
+    // Token is created in-request (durable); the email goes out after the
+    // response so the send can't be used as a timing oracle either.
+    const verificationRecord = await createVerification(db, email, 'reset');
+    const baseUrl = baseUrlFrom(c, env);
+    runInBackground(c, 'password-reset email', () =>
+        sendPasswordResetEmail(env, {
+            email: verificationRecord.email,
             user: userRes[0],
-            baseUrl: baseUrl
+            token: verificationRecord.id,
+            baseUrl,
         }),
-    });
-
-    if (error) {
-        console.error('An error occurred processing the forgot password request', error);
-        return c.json({ error: 'Unable to send reset email. Please try again later.' }, 500);
-    }
+    );
 
     return c.json({ message: 'ok' }, 200);
 }

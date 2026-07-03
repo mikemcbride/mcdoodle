@@ -1,5 +1,13 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest'
 import type { Miniflare } from 'miniflare'
+
+// Never hit the real Resend API from tests — email sends happen in background
+// tasks (signup, email change, forgot password) and must be a quiet no-op here.
+vi.mock('resend', () => ({
+  Resend: class {
+    emails = { send: async () => ({ data: { id: 'test-email' }, error: null }) }
+  },
+}))
 import apiApp from '../worker/api-app'
 import { hashPassword } from '../worker/password'
 import { createTestEnv } from './helpers'
@@ -58,7 +66,7 @@ async function seedUser(
       opts.email ?? `${id}@t.local`,
       'T',
       'User',
-      hashPassword(opts.password ?? 'password123'),
+      await hashPassword(opts.password ?? 'password123'),
       opts.isAdmin ? 1 : 0,
       opts.isVerified === false ? 0 : 1,
     )
@@ -378,5 +386,71 @@ describe('password reset token flow', () => {
     expect(
       (await req('/api/change-password', json({ token: 'vv', email: 'r@t.local', password: 'newpassword123' }))).status,
     ).toBe(401)
+  })
+
+  it('revokes every session for the user when the password is reset', async () => {
+    await seedUser({ id: 'ru', email: 'r@t.local' })
+    const s1 = await seedSession('ru')
+    const s2 = await seedSession('ru')
+
+    await seedToken('vsess', 'reset', '2999-01-01T00:00:00.000Z')
+    const res = await req('/api/change-password', json({ token: 'vsess', email: 'r@t.local', password: 'newpassword123' }))
+    expect(res.status).toBe(200)
+
+    expect((await req('/api/me', auth(s1))).status).toBe(401)
+    expect((await req('/api/me', auth(s2))).status).toBe(401)
+  })
+})
+
+describe('account enumeration protections', () => {
+  it('forgot-password answers 200 whether or not the account exists', async () => {
+    const res = await req('/api/forgot-password', json({ email: 'nobody@t.local' }))
+    expect(res.status).toBe(200)
+    // and no reset token was minted for the unknown address
+    const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM verifications').first<{ n: number }>()
+    expect(row?.n).toBe(0)
+  })
+})
+
+describe('profile updates', () => {
+  it('changing your own password revokes other sessions but keeps yours', async () => {
+    await seedUser({ id: 'pw', email: 'pw@t.local', password: 'password123' })
+    const mine = await seedSession('pw')
+    const other = await seedSession('pw')
+
+    const res = await req('/api/users', {
+      ...json({ id: 'pw', currentPassword: 'password123', newPassword: 'newpassword456' }, mine),
+      method: 'PUT',
+    })
+    expect(res.status).toBe(200)
+
+    expect((await req('/api/me', auth(mine))).status).toBe(200)
+    expect((await req('/api/me', auth(other))).status).toBe(401)
+  })
+
+  it('changing your email un-verifies the account and mints a new verify token', async () => {
+    await seedUser({ id: 'em', email: 'old@t.local' })
+    const s = await seedSession('em')
+
+    const res = await req('/api/users', { ...json({ id: 'em', email: 'new@t.local' }, s), method: 'PUT' })
+    expect(res.status).toBe(200)
+
+    const row = await env.DB.prepare('SELECT email, is_verified FROM users WHERE id = ?')
+      .bind('em')
+      .first<{ email: string; is_verified: number }>()
+    expect(row?.email).toBe('new@t.local')
+    expect(row?.is_verified).toBe(0)
+
+    const v = await env.DB.prepare("SELECT COUNT(*) AS n FROM verifications WHERE email = 'new@t.local' AND purpose = 'verify' AND status = 'active'").first<{ n: number }>()
+    expect(v?.n).toBe(1)
+  })
+
+  it('changing your email to an existing account returns 409', async () => {
+    await seedUser({ id: 'e1', email: 'e1@t.local' })
+    await seedUser({ id: 'e2', email: 'e2@t.local' })
+    const s = await seedSession('e1')
+
+    const res = await req('/api/users', { ...json({ id: 'e1', email: 'e2@t.local' }, s), method: 'PUT' })
+    expect(res.status).toBe(409)
   })
 })

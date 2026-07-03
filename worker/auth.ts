@@ -1,6 +1,5 @@
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { eq } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
+import { and, eq, ne } from 'drizzle-orm';
 
 import { getDb } from '../db/index.js';
 import { sessions } from '../db/schema/sessions.js';
@@ -18,9 +17,16 @@ function isSecureRequest(c: HandlerContext): boolean {
     }
 }
 
+// Session tokens are the credential itself, so they come straight from the
+// CSPRNG (256 bits) rather than an id generator like cuid2.
+function generateSessionToken(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function createSession(env: Env, userId: string): Promise<{ id: string; expiresAt: string }> {
     const db = getDb(env.DB);
-    const id = createId();
+    const id = generateSessionToken();
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
     await db.insert(sessions).values({ id, user_id: userId, expires_at: expiresAt });
     return { id, expiresAt };
@@ -43,16 +49,20 @@ export async function getSessionUser(c: HandlerContext, env: Env): Promise<SafeU
     if (!sessionId) return null;
 
     const db = getDb(env.DB);
-    const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
-    if (!session) return null;
+    // Single round trip: join the session to its user.
+    const [row] = await db
+        .select({ expiresAt: sessions.expires_at, user: users })
+        .from(sessions)
+        .innerJoin(users, eq(users.id, sessions.user_id))
+        .where(eq(sessions.id, sessionId));
+    if (!row) return null;
 
-    if (new Date(session.expires_at).getTime() < Date.now()) {
+    if (new Date(row.expiresAt).getTime() < Date.now()) {
         await db.delete(sessions).where(eq(sessions.id, sessionId));
         return null;
     }
 
-    const [user] = await db.select().from(users).where(eq(users.id, session.user_id));
-    if (!user) return null;
+    const { user } = row;
 
     // Construct a SafeUser explicitly (never expose the password hash).
     const safeUser: SafeUser = {
@@ -64,6 +74,17 @@ export async function getSessionUser(c: HandlerContext, env: Env): Promise<SafeU
         isVerified: user.isVerified,
     };
     return safeUser;
+}
+
+// Revoke every session belonging to a user — used when their password changes
+// (reset or self-service) so a stolen session doesn't outlive the credential.
+// Pass exceptSessionId to keep the caller's own session alive.
+export async function revokeUserSessions(env: Env, userId: string, exceptSessionId?: string): Promise<void> {
+    const db = getDb(env.DB);
+    const where = exceptSessionId
+        ? and(eq(sessions.user_id, userId), ne(sessions.id, exceptSessionId))
+        : eq(sessions.user_id, userId);
+    await db.delete(sessions).where(where);
 }
 
 export async function destroySession(c: HandlerContext, env: Env): Promise<void> {

@@ -36,10 +36,13 @@ export async function handleLogin(c: HandlerContext, env: Env) {
         let responseData;
         
         if (data.length === 0) {
+            // Burn the same scrypt work a real verification would, so response
+            // timing doesn't reveal whether the account exists.
+            await hashPassword(password);
             status = 401;
             responseData = { message: 'Invalid credentials.', reason: 'unauthorized' };
         } else {
-            const { valid, needsRehash } = verifyPassword(password, data[0].password, PASSWORD_SALT);
+            const { valid, needsRehash } = await verifyPassword(password, data[0].password, PASSWORD_SALT);
             if (!valid) {
                 status = 401;
                 responseData = { message: 'Invalid credentials.', reason: 'unauthorized' };
@@ -49,7 +52,7 @@ export async function handleLogin(c: HandlerContext, env: Env) {
             } else {
                 // Opportunistically upgrade legacy global-salt hashes to a per-user salt.
                 if (needsRehash) {
-                    await db.update(users).set({ password: hashPassword(password) }).where(eq(users.id, data[0].id));
+                    await db.update(users).set({ password: await hashPassword(password) }).where(eq(users.id, data[0].id));
                 }
                 // Establish a server-side session and set an HttpOnly cookie.
                 const { id: sessionId, expiresAt } = await createSession(env, data[0].id);

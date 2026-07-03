@@ -17,11 +17,15 @@ export const fetchCurrentUserServerFn = createServerFn({ method: 'GET' }).handle
     const { env } = await import('cloudflare:workers')
     const db = getDb(env.DB)
 
-    const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId))
-    if (!session || new Date(session.expires_at).getTime() < Date.now()) return null
+    // Single round trip: join the session to its user.
+    const [row] = await db
+      .select({ expiresAt: sessions.expires_at, user: users })
+      .from(sessions)
+      .innerJoin(users, eq(users.id, sessions.user_id))
+      .where(eq(sessions.id, sessionId))
+    if (!row || new Date(row.expiresAt).getTime() < Date.now()) return null
 
-    const [user] = await db.select().from(users).where(eq(users.id, session.user_id))
-    if (!user) return null
+    const { user } = row
 
     return {
       id: user.id,

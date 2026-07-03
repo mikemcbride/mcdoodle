@@ -8,11 +8,12 @@ import { users } from '../../../db/schema/users.js';
 import { verifications } from '../../../db/schema/verifications.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../../password.js';
+import { revokeUserSessions } from '../../auth.js';
 import { resetPasswordSchema } from '../../schemas.js';
 import type { HandlerContext, Env } from '../../types.js';
 
-function updatePassword(db: any, email: string, password: string) {
-    return db.update(users).set({ password: hashPassword(password) }).where(eq(users.email, email));
+async function updatePassword(db: any, email: string, password: string) {
+    return db.update(users).set({ password: await hashPassword(password) }).where(eq(users.email, email));
 }
 
 export async function handleChangePassword(c: HandlerContext, env: Env) {
@@ -44,6 +45,13 @@ export async function handleChangePassword(c: HandlerContext, env: Env) {
     try {
         await updatePassword(db, verification.email, password);
         await db.update(verifications).set({ status: 'expired' }).where(eq(verifications.id, token));
+
+        // The password just changed via an emailed token — revoke every existing
+        // session so a compromised session can't outlive the reset.
+        const [account] = await db.select().from(users).where(eq(users.email, verification.email));
+        if (account) {
+            await revokeUserSessions(env, account.id);
+        }
     } catch (e) {
         console.error('Error updating password:', e);
         return c.json({ message: 'Error updating password' }, 500);
