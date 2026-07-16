@@ -1,9 +1,8 @@
 import { getDb } from '../../../db/index.js';
 import { users } from '../../../db/schema/users.js';
 import { eq } from 'drizzle-orm';
-import { getCookie } from 'hono/cookie';
 import { hashPassword, verifyPassword } from '../../password.js';
-import { SESSION_COOKIE, revokeUserSessions } from '../../auth.js';
+import { getSessionId, revokeUserSessions } from '../../auth.js';
 import { runInBackground } from '../../background.js';
 import { checkRateLimit, clientIp, tooManyRequests } from '../../rate-limit.js';
 import { createVerification, sendVerifyEmail, baseUrlFrom } from '../../emails.js';
@@ -137,7 +136,7 @@ export async function handleUsers(c: HandlerContext, env: Env) {
             // The password changed: revoke every *other* session so a stolen
             // session dies with the old credential (the caller keeps theirs).
             if (passwordChanged) {
-                await revokeUserSessions(env, id, getCookie(c, SESSION_COOKIE));
+                await revokeUserSessions(env, id, getSessionId(c));
             }
 
             // The email changed and wasn't admin-verified in the same request:

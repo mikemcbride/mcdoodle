@@ -68,10 +68,12 @@ export async function handleLogin(c: HandlerContext, env: Env) {
                 if (needsRehash) {
                     await db.update(users).set({ password: await hashPassword(password) }).where(eq(users.id, data[0].id));
                 }
-                // Establish a server-side session and set an HttpOnly cookie.
+                // Establish a server-side session. Browser clients use the
+                // HttpOnly cookie; native/API clients can grab `session.token`
+                // from the body and send it as `Authorization: Bearer <token>`.
                 const { id: sessionId, expiresAt } = await createSession(env, data[0].id);
                 setSessionCookie(c, sessionId, expiresAt);
-                responseData = { ...data[0] };
+                responseData = { ...data[0], session: { token: sessionId, expiresAt } };
                 // A successful login resets the per-account counter so shared
                 // households aren't one typo away from a lockout.
                 await clearRateLimit(env, emailKey);

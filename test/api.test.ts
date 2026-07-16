@@ -50,6 +50,7 @@ const json = (body: unknown, cookie?: string): RequestInit => ({
   body: JSON.stringify(body),
 })
 const auth = (cookie: string) => ({ headers: { Cookie: `mcdoodle_session=${cookie}` } })
+const bearer = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } })
 
 let n = 0
 const uid = (p: string) => `${p}_${++n}`
@@ -101,11 +102,14 @@ async function login(email: string, password = 'password123') {
 // ---- tests -----------------------------------------------------------------
 
 describe('login + session', () => {
-  it('logs in a verified user and sets a session cookie', async () => {
+  it('returns the session token in the body, matching the cookie', async () => {
     await seedUser({ email: 'a@t.local', isVerified: true })
     const res = await login('a@t.local')
     expect(res.status).toBe(200)
-    expect(res.headers.get('set-cookie')).toContain('mcdoodle_session=')
+    const body = await res.json<{ session: { token: string; expiresAt: string } }>()
+    expect(body.session.token).toMatch(/^[0-9a-f]{64}$/)
+    expect(new Date(body.session.expiresAt).getTime()).toBeGreaterThan(Date.now())
+    expect(res.headers.get('set-cookie')).toContain(`mcdoodle_session=${body.session.token}`)
   })
 
   it('rejects a wrong password', async () => {
@@ -132,6 +136,29 @@ describe('GET /api/me', () => {
     const res = await req('/api/me', auth(s))
     expect(res.status).toBe(200)
     expect((await res.json<{ email: string }>()).email).toBe('me@t.local')
+  })
+
+  it('accepts the session token as an Authorization bearer header', async () => {
+    const id = await seedUser({ email: 'bearer@t.local' })
+    const s = await seedSession(id)
+    const res = await req('/api/me', bearer(s))
+    expect(res.status).toBe(200)
+    expect((await res.json<{ email: string }>()).email).toBe('bearer@t.local')
+  })
+
+  it('401 with an invalid bearer token', async () => {
+    expect((await req('/api/me', bearer('not-a-session'))).status).toBe(401)
+  })
+})
+
+describe('POST /api/logout', () => {
+  it('destroys a bearer-authenticated session', async () => {
+    const id = await seedUser({ email: 'out@t.local' })
+    const s = await seedSession(id)
+    expect((await req('/api/me', bearer(s))).status).toBe(200)
+    const res = await req('/api/logout', { method: 'POST', ...bearer(s) })
+    expect(res.status).toBe(200)
+    expect((await req('/api/me', bearer(s))).status).toBe(401)
   })
 })
 

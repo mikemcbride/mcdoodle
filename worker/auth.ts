@@ -42,10 +42,23 @@ export function setSessionCookie(c: HandlerContext, sessionId: string, expiresAt
     });
 }
 
-// Resolve the current user from the session cookie. Returns null if there is no
-// valid, unexpired session. Expired sessions are cleaned up opportunistically.
+// Resolve the session token for a request. Browser clients send it via the
+// HttpOnly cookie; native/API clients (e.g. an iOS app, curl) may instead send
+// `Authorization: Bearer <token>`. The cookie wins when both are present.
+export function getSessionId(c: HandlerContext): string | undefined {
+    const fromCookie = getCookie(c, SESSION_COOKIE);
+    if (fromCookie) return fromCookie;
+
+    const authorization = c.req.header('Authorization');
+    const match = authorization?.match(/^Bearer\s+(\S+)$/i);
+    return match?.[1];
+}
+
+// Resolve the current user from the session (cookie or bearer token). Returns
+// null if there is no valid, unexpired session. Expired sessions are cleaned up
+// opportunistically.
 export async function getSessionUser(c: HandlerContext, env: Env): Promise<SafeUser | null> {
-    const sessionId = getCookie(c, SESSION_COOKIE);
+    const sessionId = getSessionId(c);
     if (!sessionId) return null;
 
     const db = getDb(env.DB);
@@ -88,7 +101,7 @@ export async function revokeUserSessions(env: Env, userId: string, exceptSession
 }
 
 export async function destroySession(c: HandlerContext, env: Env): Promise<void> {
-    const sessionId = getCookie(c, SESSION_COOKIE);
+    const sessionId = getSessionId(c);
     if (sessionId) {
         const db = getDb(env.DB);
         await db.delete(sessions).where(eq(sessions.id, sessionId));
