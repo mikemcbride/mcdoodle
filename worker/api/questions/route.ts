@@ -77,9 +77,9 @@ export async function handleQuestions(c: HandlerContext, env: Env) {
             }
 
             // D1 limits bound parameters per statement (100), so chunk the rows
-            // (4 params each incl. the generated id) and run all chunks in a
-            // single atomic batch (one round trip; all-or-nothing).
-            const CHUNK_SIZE = 25;
+            // (5 params each: id, value, time, order, poll_id) and run all chunks
+            // in a single atomic batch (one round trip; all-or-nothing).
+            const CHUNK_SIZE = 20;
             const inserts = [];
             for (let i = 0; i < valuesToInsert.length; i += CHUNK_SIZE) {
                 inserts.push(db.insert(questions).values(valuesToInsert.slice(i, i + CHUNK_SIZE)).returning());

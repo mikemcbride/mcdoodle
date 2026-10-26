@@ -14,7 +14,10 @@ export type Poll = {
 
 export type Question = {
   id: string;
+  // YYYY-MM-DD
   value: string;
+  // HH:mm (24h) or null for an all-day option
+  time?: string | null;
   order: number;
   poll_id: string;
 };
@@ -104,7 +107,9 @@ export type Day = {
 }
 
 export type RankedResultRow = {
-  date: string | undefined;
+  id: string;
+  date: string;
+  time: string | null;
   yes: number;
   no: number;
   if_needed: number;
@@ -115,5 +120,17 @@ export type RankedResultRow = {
 export type Vote = {
   question: string;
   date: string;
+  time?: string | null;
   response: ResponseOption;
+}
+
+// used by the new-poll form to describe which times apply to which dates
+export type TimeMode = 'shared' | 'per-date'
+
+export type TimeSelection = {
+  mode: TimeMode;
+  // applies to every selected date when mode === 'shared'
+  shared: string[];
+  // keyed by YYYY-MM-DD; used when mode === 'per-date'
+  perDate: Record<string, string[]>;
 }

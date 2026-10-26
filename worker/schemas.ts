@@ -69,8 +69,15 @@ export const responseUpdateSchema = z.object({
     value: responseValue,
 });
 
+// A question is a date (YYYY-MM-DD) with an optional wall-clock time (HH:mm,
+// 24h). No time means the option is for the whole day.
 export const questionCreateSchema = z.object({
-    value: z.string().trim().min(1),
+    value: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD'),
+    time: z
+        .string()
+        .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Expected HH:mm')
+        .nullable()
+        .optional(),
     order: z.number().int(),
     poll_id: z.string().min(1),
 });

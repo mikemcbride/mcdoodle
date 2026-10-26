@@ -283,6 +283,59 @@ describe('endpoint lockdown', () => {
     // nonexistent poll
     expect((await req('/api/questions', json({ ...q, poll_id: 'nope' }, s))).status).toBe(404)
   })
+
+  it('POST /api/questions stores optional times and returns them on read', async () => {
+    await seedUser({ id: 'owner' })
+    await seedPoll({ id: 'pt', createdBy: 'owner' })
+    const s = await seedSession('owner')
+
+    const res = await req(
+      '/api/questions',
+      json(
+        [
+          { value: '2026-01-01', time: null, order: 0, poll_id: 'pt' },
+          { value: '2026-01-02', time: '09:00', order: 1, poll_id: 'pt' },
+          { value: '2026-01-02', time: '13:30', order: 2, poll_id: 'pt' },
+        ],
+        s,
+      ),
+    )
+    expect(res.status).toBe(200)
+
+    const list = await (await req('/api/questions?poll_id=pt')).json<Array<{ value: string; time: string | null; order: number }>>()
+    expect(list.sort((a, b) => a.order - b.order).map((q) => [q.value, q.time])).toEqual([
+      ['2026-01-01', null],
+      ['2026-01-02', '09:00'],
+      ['2026-01-02', '13:30'],
+    ])
+
+    // the composed poll detail carries the time too
+    const full = await (await req('/api/polls?id=pt&full=true')).json<{ questions: Array<{ time: string | null }> }>()
+    expect(full.questions.filter((q) => q.time).length).toBe(2)
+
+    // malformed time is a 400, not a silent null
+    expect((await req('/api/questions', json({ value: '2026-01-03', time: '9am', order: 3, poll_id: 'pt' }, s))).status).toBe(400)
+  })
+
+  it('POST /api/questions handles a large date × time batch (chunked under the D1 param limit)', async () => {
+    await seedUser({ id: 'owner' })
+    await seedPoll({ id: 'pbig', createdBy: 'owner' })
+    const s = await seedSession('owner')
+
+    // 5 dates × 9 times = 45 rows × 5 params = 225 bound params if unchunked.
+    const body: Array<{ value: string; time: string; order: number; poll_id: string }> = []
+    for (let d = 1; d <= 5; d++) {
+      for (let h = 9; h <= 17; h++) {
+        body.push({ value: `2026-03-0${d}`, time: `${String(h).padStart(2, '0')}:00`, order: body.length, poll_id: 'pbig' })
+      }
+    }
+    const res = await req('/api/questions', json(body, s))
+    expect(res.status).toBe(200)
+    expect((await res.json<unknown[]>()).length).toBe(45)
+
+    const list = await (await req('/api/questions?poll_id=pbig')).json<unknown[]>()
+    expect(list.length).toBe(45)
+  })
 })
 
 describe('voting guards', () => {

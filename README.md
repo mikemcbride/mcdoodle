@@ -53,7 +53,9 @@ up local bindings (D1, etc.). Pages and `/api/*` are served together on one port
 - `src/routes/` — TanStack Start file routes (SSR). `__root.tsx` is the HTML
   document shell.
 - `src/server/` — Start server functions (server-only D1 access for SSR).
-- `src/services/` — client-side API calls (axios → the Hono `/api`).
+- `src/services/` — client-side API calls (fetch wrapper → the Hono `/api`).
+- `src/lib/` — shared pure helpers (e.g. `questions.ts`: building date × time
+  options for a new poll, formatting and sorting them for display).
 - `worker/` — worker entry + Hono API. `worker/index.ts` wires routes to handlers
   in `worker/api/*`; auth/session, password, and Zod schemas live in
   `worker/auth.ts`, `worker/password.ts`, `worker/schemas.ts`.

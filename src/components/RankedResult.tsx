@@ -1,14 +1,13 @@
 import clsx from 'clsx';
+import { formatQuestionDate, formatQuestionTime } from '../lib/questions';
 import { RankedResultRow } from '../types';
 
 export default function RankedResult({ row }: { row: RankedResultRow }) {
   return (
-    <div
-      key={row.date}
-      className="p-4 md:py-6 lg:py-8 lg:px-6 flex items-center"
-    >
-      <div className="font-bold text-sm md:text-base flex-shrink-0 text-right pr-4 md:pr-6 lg:pr-8">
-        {row.date}
+    <div className="p-4 md:py-6 lg:py-8 lg:px-6 flex items-center">
+      <div className="flex-shrink-0 text-right pr-4 md:pr-6 lg:pr-8">
+        <div className="font-bold text-sm md:text-base">{formatQuestionDate(row.date)}</div>
+        {row.time && <div className="text-xs md:text-sm text-gray-500">{formatQuestionTime(row.time)}</div>}
       </div>
       <div className="flex h-3 md:h-6 flex-shrink rounded w-full">
         {row.yes > 0 && (

@@ -17,6 +17,10 @@ Things we want to do:
       surface lockdown, session hardening + revocation, rate limiting,
       enumeration fixes, atomic D1 batching, nightly cleanup cron, axios
       removal, server-driven auth guards, real 404s, lint green.
+- [x] Optional times on poll options. Pick dates, then either one shared set
+      of times for every date or a separate list per date (a date with no
+      times stays an all-day option). Stored as a nullable `questions.time`
+      (`HH:mm`); one question row per date × time.
 
 ## Decided against (for now)
 

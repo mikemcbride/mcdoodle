@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { format } from 'date-fns/format';
-import { addDays } from 'date-fns/addDays';
 import { RadioGroup, Label, Radio } from '@headlessui/react';
+import { formatQuestionDate, formatQuestionTime } from '../lib/questions';
 import { ResponseOption, Vote } from '../types';
 
 export default function DateResponse({ vote, handleVote, allowIfNeeded = true }: { vote: Vote, handleVote: (vote: Vote) => void, allowIfNeeded?: boolean }) {
   const [answer, setAnswer] = useState(vote.response)
-  const formattedDate = format(addDays(new Date(vote.date), 1), 'E, MMM do')
+  const formattedDate = formatQuestionDate(vote.date)
+  const formattedTime = vote.time ? formatQuestionTime(vote.time) : null
 
   function handleAnswerChange(val: ResponseOption) {
     setAnswer(val)
-    handleVote({ question: vote.question, date: vote.date, response: val })
+    handleVote({ ...vote, response: val })
   }
 
   return (
     <div>
       <div className="sm:flex items-center justify-between max-w-xl">
-        <h3 className="font-bold text-lg">{formattedDate}</h3>
+        <h3 className="font-bold text-lg">
+          {formattedDate}
+          {formattedTime && <span className="font-medium text-gray-600"> &middot; {formattedTime}</span>}
+        </h3>
         <div className="flex items-center">
           <RadioGroup value={answer} onChange={handleAnswerChange} className="mt-4 sm:mt-0">
             <Label className="sr-only">Choose an option</Label>
