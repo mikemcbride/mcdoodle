@@ -72,6 +72,22 @@ describe('questionCreateSchema', () => {
     expect(questionCreateSchema.safeParse({ ...base, value: 'tomorrow' }).success).toBe(false)
     expect(questionCreateSchema.safeParse({ ...base, value: '2026-1-1' }).success).toBe(false)
   })
+
+  it('rejects impossible calendar dates that match the shape', () => {
+    // `new Date(2026, 1, 31)` would silently roll over to March 3 on the client.
+    for (const value of ['2026-02-31', '2026-02-29', '2026-04-31', '2026-13-01', '2026-00-10', '2026-01-00', '2026-01-32']) {
+      expect(questionCreateSchema.safeParse({ ...base, value }).success, value).toBe(false)
+    }
+  })
+
+  it('accepts real edge-case dates (leap days, month ends)', () => {
+    for (const value of ['2024-02-29', '2000-02-29', '2026-02-28', '2026-12-31', '2026-04-30']) {
+      expect(questionCreateSchema.safeParse({ ...base, value }).success, value).toBe(true)
+    }
+    // 1900 is divisible by 4 but not a leap year; 2100 likewise.
+    expect(questionCreateSchema.safeParse({ ...base, value: '1900-02-29' }).success).toBe(false)
+    expect(questionCreateSchema.safeParse({ ...base, value: '2100-02-29' }).success).toBe(false)
+  })
 })
 
 describe('loginSchema', () => {

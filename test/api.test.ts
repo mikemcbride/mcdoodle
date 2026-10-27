@@ -377,6 +377,12 @@ describe('endpoint lockdown', () => {
 
     // malformed time is a 400, not a silent null
     expect((await req('/api/questions', json({ value: '2026-01-03', time: '9am', order: 3, poll_id: 'pt' }, s))).status).toBe(400)
+
+    // an impossible date (Feb 31) is a 400 — storing it unchanged would make
+    // the client display March 3, a different day from what the owner saved
+    expect((await req('/api/questions', json({ value: '2026-02-31', order: 4, poll_id: 'pt' }, s))).status).toBe(400)
+    const after = await (await req('/api/questions?poll_id=pt')).json<Array<{ value: string }>>()
+    expect(after.some((q) => q.value === '2026-02-31')).toBe(false)
   })
 
   it('POST /api/questions handles a large date × time batch (chunked under the D1 param limit)', async () => {

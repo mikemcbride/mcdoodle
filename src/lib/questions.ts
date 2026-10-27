@@ -4,7 +4,17 @@ import type { Question, TimeSelection } from '../types'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
-export const isValidDate = (s: string) => DATE_RE.test(s)
+// Shape *and* calendar validity: `2026-02-31` matches the regex but isn't a
+// real date, and `parseLocalDate` would silently roll it into March 3.
+// Mirrors `isCalendarDate` in worker/schemas.ts.
+export function isValidDate(s: string): boolean {
+  if (!DATE_RE.test(s)) return false
+  const [y, m, d] = s.split('-').map(Number)
+  if (m < 1 || m > 12 || d < 1) return false
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
+  const daysInMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]
+  return d <= daysInMonth
+}
 export const isValidTime = (s: string) => TIME_RE.test(s)
 
 // Parse a YYYY-MM-DD string as a *local* date. `new Date('2026-01-01')` is
