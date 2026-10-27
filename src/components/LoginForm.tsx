@@ -5,7 +5,14 @@ import LoginError from './LoginError.js';
 import { Link } from '@tanstack/react-router';
 import { AuthUser } from '../types.js';
 
-export default function LoginForm({ onLogin }: { onLogin: (user: AuthUser) => void }) {
+type Props = {
+  onLogin: (user: AuthUser) => void;
+  // Shows the dev-only auto-login shortcut. Server-decided; see worker/dev-login.ts.
+  devLoginEnabled?: boolean;
+  returnUrl?: string;
+}
+
+export default function LoginForm({ onLogin, devLoginEnabled = false, returnUrl = '/' }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -109,7 +116,36 @@ export default function LoginForm({ onLogin }: { onLogin: (user: AuthUser) => vo
             </p>
           </form>
         </div>
+
+        {devLoginEnabled && (
+          <DevLogin returnUrl={returnUrl} />
+        )}
       </div>
+    </div>
+  )
+}
+
+// Local-development shortcut. Plain anchors (full page loads) so the server
+// sets the session cookie and the SSR'd redirect target renders logged in.
+function DevLogin({ returnUrl }: { returnUrl: string }) {
+  const href = (as?: 'user') =>
+    `/api/dev/login?returnUrl=${encodeURIComponent(returnUrl)}${as ? `&as=${as}` : ''}`
+
+  return (
+    <div className="mt-6 rounded-lg border-2 border-dashed border-amber-400 bg-amber-50 px-4 py-4 sm:px-6">
+      <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Local development</p>
+      <a
+        href={href()}
+        className="mt-3 w-full flex items-center justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-600"
+      >
+        Log in as dev admin
+      </a>
+      <p className="mt-2 text-center text-xs text-amber-800">
+        or{' '}
+        <a href={href('user')} className="font-semibold underline hover:text-amber-900">
+          as a regular (non-admin) user
+        </a>
+      </p>
     </div>
   )
 }

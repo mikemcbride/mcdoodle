@@ -3,8 +3,19 @@ import { eq } from 'drizzle-orm'
 import { getDb } from '../../db/index'
 import { sessions } from '../../db/schema/sessions'
 import { users } from '../../db/schema/users'
+import { isDevLoginEnabled } from '../../worker/dev-login'
 
 const SESSION_COOKIE = 'mcdoodle_session'
+
+// Whether the dev-only auto-login (GET /api/dev/login) is available for this
+// request, so the login page can offer a button. Always false in production.
+export const fetchDevLoginEnabledServerFn = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { getRequest } = await import('@tanstack/react-start/server')
+    const { env } = await import('cloudflare:workers')
+    return isDevLoginEnabled(env, getRequest().headers.get('cf-connecting-ip'))
+  },
+)
 
 // Resolves the logged-in user from the session cookie on the server, so the
 // app can render the correct auth state during SSR (no logged-out flash).

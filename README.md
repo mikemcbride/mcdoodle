@@ -34,6 +34,30 @@ up local bindings (D1, etc.). Pages and `/api/*` are served together on one port
 > `.wrangler/`. If you change the Drizzle schema, add a migration in
 > `db/migrations/` and run `pnpm db:migrate` again.
 
+### Logging in locally
+
+A fresh local database has no users, and sign-up can't complete locally (the
+verification email goes out via Resend). Instead, enable the dev login:
+
+```bash
+cp .dev.vars.example .dev.vars   # sets DEV_LOGIN=true
+```
+
+Then on `/login` you'll see a **Log in as dev admin** button (or a link to log
+in as a regular non-admin user). It creates the account on first use and
+issues a normal session cookie. Both dev accounts also work with the regular
+login form using the password `password`:
+
+| Account | Email | Role |
+| --- | --- | --- |
+| dev admin | `dev@mcdoodle.local` | admin, verified |
+| dev user | `user@mcdoodle.local` | regular, verified |
+
+The endpoint (`GET /api/dev/login`) is a 404 unless `DEV_LOGIN=true` **and**
+the client is loopback (per `CF-Connecting-IP`, which Cloudflare sets
+authoritatively in production) — see `worker/dev-login.ts`. It cannot be
+enabled in production.
+
 ### Other scripts
 
 | Script | What it does |
@@ -66,10 +90,11 @@ up local bindings (D1, etc.). Pages and `/api/*` are served together on one port
 ## Environment / secrets
 
 The Worker expects these (set as Wrangler secrets in production, and in a local
-`.dev.vars` file for development):
+`.dev.vars` file for development — start from `.dev.vars.example`):
 
 - `PASSWORD_SALT` — used to verify legacy password hashes (new hashes use a
   per-user salt).
 - `RESEND_API_KEY` — for sending verification / password-reset emails.
 - `BASE_URL` — optional; base URL used in email links (derived from the request
   if unset).
+- `DEV_LOGIN` — local only; `true` enables the dev login described above.
