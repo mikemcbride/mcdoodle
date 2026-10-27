@@ -21,11 +21,12 @@ export default function TimeOptions({ dates, value, onChange }: Props) {
     let perDate = value.perDate
     // Switching to per-date: seed each date with the shared times so the user
     // can tweak rather than start from scratch. Dates that already have their
-    // own list are left alone.
+    // own list are left alone — including an empty list, which means the user
+    // deliberately cleared that date to make it all-day.
     if (mode === 'per-date' && value.shared.length > 0) {
       perDate = { ...value.perDate }
       for (const date of sortedDates) {
-        if (!perDate[date] || perDate[date].length === 0) {
+        if (!perDate[date]) {
           perDate[date] = [...value.shared]
         }
       }
