@@ -17,12 +17,12 @@ type QuestionValues = {
 
 export default function RankedResults({ submissions, questions }: { submissions: Submission[], questions: Question[]}) {
   const [showNos, setShowNos] = useState(false);
-  const questionMap = new Map<string, string>()
+  const questionMap = new Map<string, Question>()
   const questionValues: QuestionValues = {}
   for (const q of questions) {
     const qid = q.id.toString()
     if (!questionMap.has(qid)) {
-      questionMap.set(qid, q.value)
+      questionMap.set(qid, q)
       questionValues[qid] = {
         yes: 0,
         no: 0,
@@ -42,11 +42,13 @@ export default function RankedResults({ submissions, questions }: { submissions:
     }
   }
 
-  // return value we'll use needs to be an array of objects
-  // the objects will have a date key (the question value), then yes, no, if_needed, and total_responses, which are all numbers
+  // one row per question: its date/time plus yes / no / if_needed tallies
   const responses: RankedResultRow[] = Object.keys(questionValues).map((key) => {
+    const q = questionMap.get(key)!
     return {
-      date: questionMap.get(key),
+      id: key,
+      date: q.value,
+      time: q.time ?? null,
       yes: questionValues[key].yes,
       no: questionValues[key].no,
       if_needed: questionValues[key].if_needed,
@@ -81,7 +83,7 @@ export default function RankedResults({ submissions, questions }: { submissions:
       <div className="-my-2 -mx-4 sm:-mx-6 lg:-mx-8">
         <div className="pt-2 pb-6 md:px-6 lg:px-8">
           <section className="shadow-xs outline-1 outline-gray-900/5 md:rounded-xl divide-y divide-gray-100 bg-white relative">
-            {yesResponses.map(row => <RankedResult row={row} key={row.date} />)}
+            {yesResponses.map(row => <RankedResult row={row} key={row.id} />)}
             <div className="relative -mb-px">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-full absolute" />
@@ -98,7 +100,7 @@ export default function RankedResults({ submissions, questions }: { submissions:
                 </div>
               </div>
             </div>
-            {showNos && noResponses.map(row => <RankedResult row={row} key={row.date} />)}
+            {showNos && noResponses.map(row => <RankedResult row={row} key={row.id} />)}
           </section>
         </div>
       </div>

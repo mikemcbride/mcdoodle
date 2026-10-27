@@ -10,6 +10,9 @@ export interface Env {
 	PASSWORD_SALT: string;
 	RESEND_API_KEY: string;
 	BASE_URL?: string;
+	// 'true' enables GET /api/dev/login for loopback clients. Local-only, set
+	// in the gitignored .dev.vars — never as a production secret.
+	DEV_LOGIN?: string;
 }
 
 // A user row with the password field removed, safe to return to clients.

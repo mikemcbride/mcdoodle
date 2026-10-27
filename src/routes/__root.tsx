@@ -2,7 +2,7 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import AppHeader from '../components/AppHeader'
 import { AuthProvider } from '../auth'
-import { fetchCurrentUserServerFn } from '../server/auth'
+import { fetchCurrentUserServerFn, fetchDevLoginEnabledServerFn } from '../server/auth'
 import type { AuthUser } from '../types'
 
 import appCss from '../index.css?url'
@@ -11,7 +11,10 @@ export const Route = createRootRoute({
   // Resolve the logged-in user from the session cookie during SSR so the first
   // paint reflects the real auth state (no logged-out flash).
   loader: async () => {
-    const u = await fetchCurrentUserServerFn()
+    const [u, devLoginEnabled] = await Promise.all([
+      fetchCurrentUserServerFn(),
+      fetchDevLoginEnabledServerFn(),
+    ])
     const user: AuthUser | null = u
       ? {
           id: u.id,
@@ -21,7 +24,7 @@ export const Route = createRootRoute({
           lastName: u.lastName ?? undefined,
         }
       : null
-    return { user }
+    return { user, devLoginEnabled }
   },
   head: () => ({
     meta: [

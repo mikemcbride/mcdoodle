@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { createFileRoute, Link, notFound, useRouter } from '@tanstack/react-router';
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
-import _orderBy from 'lodash/orderBy';
 import RankedResults from '../../components/RankedResults';
 import ResponsePill from '../../components/ResponsePill';
 import SubmissionForm from '../../components/SubmissionForm';
@@ -10,6 +9,7 @@ import { PencilSquareIcon, ExclamationTriangleIcon } from '@heroicons/react/24/s
 import CopyLinkButton from '../../components/CopyLinkButton';
 import { getPollServerFn } from '../../server/polls';
 import { useAuth } from '../../context/AuthContext';
+import { formatQuestionDate, formatQuestionTime, sortQuestions } from '../../lib/questions';
 import { Poll, Submission } from '../../types';
 
 export const Route = createFileRoute('/polls/$id')({
@@ -73,7 +73,8 @@ function RouteComponent() {
   const [submissionToEdit, setSubmissionToEdit] = useState<Submission | null>(null);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);
 
-  const questions = _orderBy(poll?.questions ?? [], 'value');
+  // chronological: by date, then by time (all-day options first)
+  const questions = sortQuestions(poll?.questions ?? []);
   const submissions = poll?.submissions ?? [];
   const isClosed = poll?.status === 'closed';
   // poll requires an account and the visitor isn't signed in
@@ -218,7 +219,12 @@ function RouteComponent() {
                   {questions.map((question) => {
                     return (
                       <tr key={question.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{question.value}</td>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                          <div>{formatQuestionDate(question.value)}</div>
+                          {question.time && (
+                            <div className="mt-0.5 font-normal text-gray-500">{formatQuestionTime(question.time)}</div>
+                          )}
+                        </td>
                         {submissions.map(submission => {
                           return (
                             <td key={`row_${submission.id}`} className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">

@@ -7,6 +7,7 @@ import { subDays } from 'date-fns/subDays'
 import { eachDayOfInterval } from 'date-fns/eachDayOfInterval'
 import { isToday } from 'date-fns/isToday'
 import { isSameMonth } from 'date-fns/isSameMonth'
+import { format } from 'date-fns/format'
 import { Day } from '../types';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -28,7 +29,9 @@ export default function CalendarGrid({ selected, onUpdate }: { selected: string[
     const intervalStart = subDays(startOfMonth, daysToSub)
     const intervalEnd = addDays(intervalStart, 41) // our grid is 6 rows with 7 days, so we have 42 cells. We need to add 41 days.
     const intervalDays = eachDayOfInterval({ start: intervalStart, end: intervalEnd }).map(day => {
-      const date = day.toISOString().split('T')[0]
+      // format in local time; toISOString() would shift to UTC and land on the
+      // previous day for anyone east of Greenwich.
+      const date = format(day, 'yyyy-MM-dd')
       return {
         date: date,
         isCurrentMonth: isSameMonth(day, startOfMonth),

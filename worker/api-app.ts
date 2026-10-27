@@ -9,6 +9,7 @@ import { handleVerifications } from './api/verifications/route.js';
 import { handleForgotPassword } from './api/forgot-password/route.js';
 import { handleChangePassword } from './api/change-password/route.js';
 import { handleVerifyEmail } from './api/verify-email/route.js';
+import { handleDevLogin } from './api/dev-login/route.js';
 import { getSessionUser, destroySession } from './auth.js';
 import type { Env, Variables } from './types';
 
@@ -40,6 +41,10 @@ apiApp.post('/api/logout', async (c) => {
 });
 
 apiApp.post('/api/login', async (c) => handleLogin(c, c.env));
+
+// Dev-only auto-login. 404 unless DEV_LOGIN=true (from .dev.vars) AND the
+// client is loopback (CF-Connecting-IP) — see worker/dev-login.ts.
+apiApp.get('/api/dev/login', async (c) => handleDevLogin(c, c.env));
 
 apiApp.get('/api/polls', async (c) => handlePolls(c, c.env));
 apiApp.post('/api/polls', async (c) => handlePolls(c, c.env));

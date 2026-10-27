@@ -6,14 +6,20 @@ import { useQueryClient } from '@tanstack/react-query';
 import Polls from '../services/polls';
 import Questions from '../services/questions'
 import CalendarGrid from './CalendarGrid.js'
+import TimeOptions from './TimeOptions.js'
 import Spinner from './Spinner.js'
 import SuccessAlert from './SuccessAlert.js'
+import { buildQuestions } from '../lib/questions'
+import type { TimeSelection } from '../types'
+
+const EMPTY_TIMES: TimeSelection = { mode: 'shared', shared: [], perDate: {} }
 
 export default function NewPollForm() {
   const router = useRouter()
   const queryClient = useQueryClient()
 
   const [selected, setSelected] = useState<string[]>([])
+  const [times, setTimes] = useState<TimeSelection>(EMPTY_TIMES)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [allowIfNeeded, setAllowIfNeeded] = useState(true)
@@ -26,8 +32,11 @@ export default function NewPollForm() {
     setSelected(val)
   }
 
+  // dates × times, expanded into the flat list of options this poll will have
+  const plannedQuestions = buildQuestions(selected, times)
+
   function handleSubmit() {
-    if (!title || selected.length === 0) {
+    if (!title || plannedQuestions.length === 0) {
       setErrorMessage('A title and at least one date are required.')
       return;
     }
@@ -46,26 +55,10 @@ export default function NewPollForm() {
         setIsSubmitting(false);
         return;
       }
-      // Sort selected dates to ensure proper ordering (important when dates span multiple months)
-      // Filter out any invalid dates and ensure they're valid ISO date strings
-      const sortedSelected = [...selected]
-        .filter(val => val && typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/))
-        .sort();
-      
-      if (sortedSelected.length === 0) {
-        console.error('No valid dates selected');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      const questionsToCreate = sortedSelected.map((val, idx) => ({
-        value: val,
-        poll_id: newPoll.id,
-        order: idx
-      }));
-      
-      console.log('Creating questions:', questionsToCreate.length, 'questions for poll:', newPoll.id);
-      
+      // buildQuestions already filters invalid dates, dedupes/sorts times, and
+      // assigns a chronological `order` across all date × time options.
+      const questionsToCreate = plannedQuestions.map(q => ({ ...q, poll_id: newPoll.id }));
+
       Questions.create(questionsToCreate).then(() => {
         setIsSubmitting(false)
         flashSuccess()
@@ -156,6 +149,16 @@ export default function NewPollForm() {
       <h3 className="hidden sm:block text-2xl font-bold">Choose Dates</h3>
       <CalendarGrid selected={selected} onUpdate={updateSelected} />
     </section>
+
+    <section className="mt-4">
+      <TimeOptions dates={selected} value={times} onChange={setTimes} />
+    </section>
+
+    {plannedQuestions.length > 0 && (
+      <p className="mt-6 text-sm text-gray-600 max-w-3xl">
+        This poll will have <span className="font-semibold text-gray-900">{plannedQuestions.length}</span> option{plannedQuestions.length === 1 ? '' : 's'} to vote on.
+      </p>
+    )}
 
     <SuccessAlert show={showSuccess} />
 

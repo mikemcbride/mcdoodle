@@ -4,6 +4,7 @@ import {
   updatePollStatusSchema,
   registerSchema,
   loginSchema,
+  questionCreateSchema,
 } from '../worker/schemas'
 
 describe('createPollSchema', () => {
@@ -45,6 +46,47 @@ describe('registerSchema (mass-assignment protection)', () => {
   it('rejects short passwords and bad emails', () => {
     expect(registerSchema.safeParse({ email: 'a@b.com', password: 'short' }).success).toBe(false)
     expect(registerSchema.safeParse({ email: 'not-an-email', password: 'password123' }).success).toBe(false)
+  })
+})
+
+describe('questionCreateSchema', () => {
+  const base = { value: '2026-01-01', order: 0, poll_id: 'p1' }
+
+  it('accepts a date-only question (time omitted or null)', () => {
+    expect(questionCreateSchema.safeParse(base).success).toBe(true)
+    expect(questionCreateSchema.parse({ ...base, time: null }).time).toBeNull()
+  })
+
+  it('accepts a 24h HH:mm time', () => {
+    expect(questionCreateSchema.parse({ ...base, time: '09:00' }).time).toBe('09:00')
+    expect(questionCreateSchema.parse({ ...base, time: '23:59' }).time).toBe('23:59')
+  })
+
+  it('rejects malformed times', () => {
+    for (const time of ['9:00', '24:00', '12:60', '9am', '09:00:00', '']) {
+      expect(questionCreateSchema.safeParse({ ...base, time }).success, time).toBe(false)
+    }
+  })
+
+  it('requires value to be a YYYY-MM-DD date', () => {
+    expect(questionCreateSchema.safeParse({ ...base, value: 'tomorrow' }).success).toBe(false)
+    expect(questionCreateSchema.safeParse({ ...base, value: '2026-1-1' }).success).toBe(false)
+  })
+
+  it('rejects impossible calendar dates that match the shape', () => {
+    // `new Date(2026, 1, 31)` would silently roll over to March 3 on the client.
+    for (const value of ['2026-02-31', '2026-02-29', '2026-04-31', '2026-13-01', '2026-00-10', '2026-01-00', '2026-01-32']) {
+      expect(questionCreateSchema.safeParse({ ...base, value }).success, value).toBe(false)
+    }
+  })
+
+  it('accepts real edge-case dates (leap days, month ends)', () => {
+    for (const value of ['2024-02-29', '2000-02-29', '2026-02-28', '2026-12-31', '2026-04-30']) {
+      expect(questionCreateSchema.safeParse({ ...base, value }).success, value).toBe(true)
+    }
+    // 1900 is divisible by 4 but not a leap year; 2100 likewise.
+    expect(questionCreateSchema.safeParse({ ...base, value: '1900-02-29' }).success).toBe(false)
+    expect(questionCreateSchema.safeParse({ ...base, value: '2100-02-29' }).success).toBe(false)
   })
 })
 

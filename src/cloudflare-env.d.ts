@@ -8,5 +8,6 @@ declare module 'cloudflare:workers' {
     PASSWORD_SALT: string
     RESEND_API_KEY: string
     BASE_URL?: string
+    DEV_LOGIN?: string
   }
 }

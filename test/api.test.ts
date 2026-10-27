@@ -162,6 +162,68 @@ describe('POST /api/logout', () => {
   })
 })
 
+describe('GET /api/dev/login (dev-only auto-login)', () => {
+  // built per call: `env` is populated in beforeAll, after this describe runs
+  const devEnv = () => ({ ...env, DEV_LOGIN: 'true' }) as Env
+  const reqDev = (path: string, init?: RequestInit) => apiApp.request(path, init, devEnv())
+  const sessionFrom = (res: Response) => res.headers.get('set-cookie')?.match(/mcdoodle_session=([^;]+)/)?.[1]
+
+  it('is a 404 unless DEV_LOGIN=true', async () => {
+    expect((await req('/api/dev/login')).status).toBe(404)
+    // any value other than the literal 'true' stays off
+    expect((await apiApp.request('/api/dev/login', undefined, { ...env, DEV_LOGIN: '1' } as Env)).status).toBe(404)
+    const count = await env.DB.prepare('SELECT count(*) AS n FROM users').first<{ n: number }>()
+    expect(count?.n).toBe(0)
+  })
+
+  it('is a 404 for non-loopback clients even when enabled', async () => {
+    // In production Cloudflare always sets CF-Connecting-IP to the real client IP.
+    const from = (ip: string) => ({ headers: { 'cf-connecting-ip': ip } })
+    expect((await reqDev('/api/dev/login', from('203.0.113.5'))).status).toBe(404)
+    expect((await reqDev('/api/dev/login', from('2001:db8::1'))).status).toBe(404)
+    // loopback is allowed (what wrangler dev / miniflare send)
+    expect((await reqDev('/api/dev/login', from('::1'))).status).toBe(302)
+    expect((await reqDev('/api/dev/login', from('127.0.0.1'))).status).toBe(302)
+    // the hostname is NOT the signal: wrangler dev rewrites it to the custom domain
+    expect((await reqDev('http://doodle.mcbrides.us/api/dev/login', from('::1'))).status).toBe(302)
+  })
+
+  it('creates a verified admin on first use and issues a real session', async () => {
+    const res = await reqDev('/api/dev/login')
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('/')
+    const s = sessionFrom(res)
+    expect(s).toBeTruthy()
+
+    const me = await (await req('/api/me', auth(s!))).json<{ email: string; isAdmin: boolean; isVerified: boolean }>()
+    expect(me).toMatchObject({ email: 'dev@mcdoodle.local', isAdmin: true, isVerified: true })
+    // the dev password works with the normal login form too
+    const login = await req('/api/login', json({ email: 'dev@mcdoodle.local', password: 'password' }))
+    expect(login.status).toBe(200)
+  })
+
+  it('is idempotent (reuses the account) and supports a non-admin variant', async () => {
+    const a = await reqDev('/api/dev/login')
+    const b = await reqDev('/api/dev/login')
+    const idA = (await (await req('/api/me', auth(sessionFrom(a)!))).json<{ id: string }>()).id
+    const idB = (await (await req('/api/me', auth(sessionFrom(b)!))).json<{ id: string }>()).id
+    expect(idA).toBe(idB)
+
+    const u = await reqDev('/api/dev/login?as=user')
+    const me = await (await req('/api/me', auth(sessionFrom(u)!))).json<{ email: string; isAdmin: boolean }>()
+    expect(me).toMatchObject({ email: 'user@mcdoodle.local', isAdmin: false })
+
+    const count = await env.DB.prepare('SELECT count(*) AS n FROM users').first<{ n: number }>()
+    expect(count?.n).toBe(2)
+  })
+
+  it('only follows same-origin path returnUrls', async () => {
+    expect((await reqDev('/api/dev/login?returnUrl=%2Fpolls%2Fabc')).headers.get('location')).toBe('/polls/abc')
+    expect((await reqDev('/api/dev/login?returnUrl=%2F%2Fevil.example')).headers.get('location')).toBe('/')
+    expect((await reqDev('/api/dev/login?returnUrl=https%3A%2F%2Fevil.example')).headers.get('location')).toBe('/')
+  })
+})
+
 describe('poll create', () => {
   it('sets created_by from the session', async () => {
     await seedUser({ id: 'owner' })
@@ -282,6 +344,65 @@ describe('endpoint lockdown', () => {
     expect((await req('/api/questions', json({ ...q, order: 1 }, sa))).status).toBe(200)
     // nonexistent poll
     expect((await req('/api/questions', json({ ...q, poll_id: 'nope' }, s))).status).toBe(404)
+  })
+
+  it('POST /api/questions stores optional times and returns them on read', async () => {
+    await seedUser({ id: 'owner' })
+    await seedPoll({ id: 'pt', createdBy: 'owner' })
+    const s = await seedSession('owner')
+
+    const res = await req(
+      '/api/questions',
+      json(
+        [
+          { value: '2026-01-01', time: null, order: 0, poll_id: 'pt' },
+          { value: '2026-01-02', time: '09:00', order: 1, poll_id: 'pt' },
+          { value: '2026-01-02', time: '13:30', order: 2, poll_id: 'pt' },
+        ],
+        s,
+      ),
+    )
+    expect(res.status).toBe(200)
+
+    const list = await (await req('/api/questions?poll_id=pt')).json<Array<{ value: string; time: string | null; order: number }>>()
+    expect(list.sort((a, b) => a.order - b.order).map((q) => [q.value, q.time])).toEqual([
+      ['2026-01-01', null],
+      ['2026-01-02', '09:00'],
+      ['2026-01-02', '13:30'],
+    ])
+
+    // the composed poll detail carries the time too
+    const full = await (await req('/api/polls?id=pt&full=true')).json<{ questions: Array<{ time: string | null }> }>()
+    expect(full.questions.filter((q) => q.time).length).toBe(2)
+
+    // malformed time is a 400, not a silent null
+    expect((await req('/api/questions', json({ value: '2026-01-03', time: '9am', order: 3, poll_id: 'pt' }, s))).status).toBe(400)
+
+    // an impossible date (Feb 31) is a 400 — storing it unchanged would make
+    // the client display March 3, a different day from what the owner saved
+    expect((await req('/api/questions', json({ value: '2026-02-31', order: 4, poll_id: 'pt' }, s))).status).toBe(400)
+    const after = await (await req('/api/questions?poll_id=pt')).json<Array<{ value: string }>>()
+    expect(after.some((q) => q.value === '2026-02-31')).toBe(false)
+  })
+
+  it('POST /api/questions handles a large date × time batch (chunked under the D1 param limit)', async () => {
+    await seedUser({ id: 'owner' })
+    await seedPoll({ id: 'pbig', createdBy: 'owner' })
+    const s = await seedSession('owner')
+
+    // 5 dates × 9 times = 45 rows × 5 params = 225 bound params if unchunked.
+    const body: Array<{ value: string; time: string; order: number; poll_id: string }> = []
+    for (let d = 1; d <= 5; d++) {
+      for (let h = 9; h <= 17; h++) {
+        body.push({ value: `2026-03-0${d}`, time: `${String(h).padStart(2, '0')}:00`, order: body.length, poll_id: 'pbig' })
+      }
+    }
+    const res = await req('/api/questions', json(body, s))
+    expect(res.status).toBe(200)
+    expect((await res.json<unknown[]>()).length).toBe(45)
+
+    const list = await (await req('/api/questions?poll_id=pbig')).json<unknown[]>()
+    expect(list.length).toBe(45)
   })
 })
 

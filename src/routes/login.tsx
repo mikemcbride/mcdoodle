@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useLoaderData } from "@tanstack/react-router";
 import { useAuth } from '../context/AuthContext';
 import LoginForm from "../components/LoginForm.tsx";
 import { AuthUser } from "../types";
@@ -17,6 +17,8 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { login, logout } = useAuth();
   const navigate = useNavigate();
+  // server-decided; only ever true for loopback clients with DEV_LOGIN=true
+  const { devLoginEnabled } = useLoaderData({ from: '__root__' });
   let { returnUrl } = Route.useSearch();
   if (!returnUrl) {
     returnUrl = "/";
@@ -32,5 +34,5 @@ function Login() {
     }
   }
 
-  return <LoginForm onLogin={handleLogin} />;
+  return <LoginForm onLogin={handleLogin} devLoginEnabled={devLoginEnabled} returnUrl={returnUrl} />;
 }

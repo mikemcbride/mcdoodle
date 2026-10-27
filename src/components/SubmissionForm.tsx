@@ -29,6 +29,7 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: Pro
       return {
         question: question.id,
         date: question.value,
+        time: question.time ?? null,
         response: null,
       }
     })
@@ -39,6 +40,7 @@ const SubmissionForm = ({ poll, submission, handleCancel, handleSubmitted }: Pro
       return {
         question: question.id,
         date: question.value,
+        time: question.time ?? null,
         response: response
       }
     })

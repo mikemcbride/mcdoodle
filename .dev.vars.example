@@ -1,0 +1,13 @@
+# Local development variables for `pnpm dev` / `pnpm dev:wrangler`.
+# Copy to `.dev.vars` (gitignored). Production uses Wrangler secrets instead.
+
+# Enables "Log in as dev admin" on /login (GET /api/dev/login). Only honoured
+# for loopback clients — see worker/dev-login.ts. Never set this in prod.
+DEV_LOGIN=true
+
+# Any value works locally; only used to verify legacy password hashes.
+PASSWORD_SALT=local-dev-salt
+
+# Optional. Leave unset to skip real email sends; signup/reset flows will log
+# the failure instead of delivering mail.
+# RESEND_API_KEY=re_...
